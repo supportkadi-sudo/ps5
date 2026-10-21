@@ -75,6 +75,7 @@ class ProductSale(Base):
 class Entry(StatesGroup):
     booth_name = State()
     booth_rate = State()
+    backdated_start = State()
     product_name = State()
     product_price = State()
     sell_product = State()
@@ -188,7 +189,11 @@ async def booths(message: Message):
                 hours, minutes = divmod(mins, 60)
                 lines.append(f"\n🔴 {booth.name} — занята с {local_time(visit.started_at)} ({hours} ч {minutes} мин)\nТариф: {money(booth.hourly_rate)}/час\nОстановить: /stop_{booth.id}")
             else:
-                lines.append(f"\n🟢 {booth.name} — свободна, {money(booth.hourly_rate)}/час\nНачать: /start_{booth.id}")
+                lines.append(
+                    f"\n🟢 {booth.name} — свободна, {money(booth.hourly_rate)}/час"
+                    f"\nНачать сейчас: /start_{booth.id}"
+                    f"\nНачать задним числом: /startback_{booth.id}"
+                )
     await message.answer("\n".join(lines))
 
 
@@ -209,6 +214,76 @@ async def start_visit(message: Message):
         db.add(visit)
         await db.commit()
     await message.answer(f"Сеанс на кабинке «{booth.name}» начат в {local_time(visit.started_at)}.")
+
+
+@router.message(F.text.regexp(r"^/startback_\d+$"))
+async def start_visit_backdated(message: Message, state: FSMContext):
+    if not is_admin(message):
+        return
+    booth_id = int(message.text.split("_", 1)[1])
+    async with DB() as db:
+        booth = await db.get(Booth, booth_id)
+        if not booth or not booth.active:
+            await message.answer("Кабинка не найдена.")
+            return
+        if await get_open_visit(db, booth_id):
+            await message.answer("На этой кабинке уже идёт сеанс. Сначала завершите его.")
+            return
+    await state.update_data(backdated_booth_id=booth_id)
+    await state.set_state(Entry.backdated_start)
+    await message.answer(
+        f"Введите время начала сеанса для «{booth.name}».\n"
+        "Форматы: ЧЧ:ММ (сегодня) или ДД.ММ.ГГГГ ЧЧ:ММ.\n"
+        "Например: 20:25 или 21.10.2026 20:25. Для отмены: /cancel"
+    )
+
+
+@router.message(Entry.backdated_start)
+async def confirm_backdated_start(message: Message, state: FSMContext):
+    if not is_admin(message):
+        return
+    text = (message.text or "").strip()
+    try:
+        if len(text) == 5:
+            started_local = datetime.strptime(text, "%H:%M").replace(
+                year=datetime.now(LOCAL_TZ).year,
+                month=datetime.now(LOCAL_TZ).month,
+                day=datetime.now(LOCAL_TZ).day,
+                tzinfo=LOCAL_TZ,
+            )
+        else:
+            started_local = datetime.strptime(text, "%d.%m.%Y %H:%M").replace(tzinfo=LOCAL_TZ)
+    except ValueError:
+        await message.answer("Не распознал время. Введите ЧЧ:ММ или ДД.ММ.ГГГГ ЧЧ:ММ.")
+        return
+
+    now_local = datetime.now(LOCAL_TZ)
+    if started_local >= now_local:
+        await message.answer("Время начала должно быть в прошлом. Введите время ещё раз.")
+        return
+
+    data = await state.get_data()
+    booth_id = data["backdated_booth_id"]
+    async with DB() as db:
+        booth = await db.get(Booth, booth_id)
+        if not booth or not booth.active:
+            await state.clear()
+            await message.answer("Кабинка не найдена или отключена.", reply_markup=menu())
+            return
+        if await get_open_visit(db, booth_id):
+            await state.clear()
+            await message.answer("На этой кабинке уже идёт сеанс. Задний запуск отменён.", reply_markup=menu())
+            return
+        visit = Visit(booth_id=booth_id, started_at=started_local.astimezone(timezone.utc))
+        db.add(visit)
+        await db.commit()
+
+    await state.clear()
+    await message.answer(
+        f"Сеанс на кабинке «{booth.name}» записан с {started_local.strftime('%d.%m.%Y %H:%M')} "
+        "(время Ташкента).",
+        reply_markup=menu(),
+    )
 
 
 @router.message(F.text.regexp(r"^/stop_\d+$"))
