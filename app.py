@@ -11,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, func, select
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, func, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -67,6 +67,7 @@ class ProductSale(Base):
     __tablename__ = "product_sales"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    booth_id: Mapped[int | None] = mapped_column(ForeignKey("booths.id"), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -80,6 +81,7 @@ class Entry(StatesGroup):
     product_price = State()
     sell_product = State()
     sell_quantity = State()
+    sell_booth = State()
 
 
 def is_admin(message: Message) -> bool:
@@ -406,12 +408,48 @@ async def sell_finish(message: Message, state: FSMContext):
         return
     data = await state.get_data()
     quantity = int(text)
+    async with DB() as db:
+        booths = (await db.execute(select(Booth).where(Booth.active.is_(True)).order_by(Booth.id))).scalars().all()
+        lines = ["0. Без привязки (отдельная продажа)"]
+        for booth in booths:
+            visit = await get_open_visit(db, booth.id)
+            status = "идёт сеанс" if visit else "свободна"
+            lines.append(f"{booth.id}. {booth.name} — {status}")
+    await state.update_data(sell_quantity=quantity)
+    await state.set_state(Entry.sell_booth)
+    await message.answer("К какой кабинке привязать продажу?\n" + "\n".join(lines) + "\nВведите номер или 0.")
+
+
+@router.message(Entry.sell_booth)
+async def sell_save(message: Message, state: FSMContext):
+    if not is_admin(message):
+        return
+    choice = (message.text or "").strip()
+    if not choice.isdigit():
+        await message.answer("Введите номер кабинки или 0 для продажи без привязки.")
+        return
+    booth_id = int(choice) or None
+    data = await state.get_data()
     unit_price = Decimal(data["product_price"])
     async with DB() as db:
-        db.add(ProductSale(product_id=data["product_id"], quantity=quantity, unit_price=unit_price))
+        booth = await db.get(Booth, booth_id) if booth_id is not None else None
+        if booth_id is not None and (not booth or not booth.active):
+            await message.answer("Активная кабинка с таким номером не найдена. Выберите из списка или введите 0.")
+            return
+        db.add(ProductSale(
+            product_id=data["product_id"],
+            booth_id=booth_id,
+            quantity=data["sell_quantity"],
+            unit_price=unit_price,
+        ))
         await db.commit()
     await state.clear()
-    await message.answer(f"Продажа записана: {data['product_name']} × {quantity} = {money(unit_price * quantity)}.", reply_markup=menu())
+    booth_label = f"Кабинка: {booth.name}" if booth else "Без привязки к кабинке"
+    await message.answer(
+        f"Продажа записана: {data['product_name']} × {data['sell_quantity']} = "
+        f"{money(unit_price * data['sell_quantity'])}.\n{booth_label}.",
+        reply_markup=menu(),
+    )
 
 
 @router.message(F.text == "📊 Отчёт за сегодня")
@@ -425,21 +463,38 @@ async def today_report(message: Message):
     async with DB() as db:
         visit_rows = (await db.execute(select(Visit.amount).where(Visit.ended_at >= start_utc, Visit.ended_at < end_utc, Visit.amount.is_not(None)))).scalars().all()
         sales = (await db.execute(select(ProductSale).where(ProductSale.created_at >= start_utc, ProductSale.created_at < end_utc))).scalars().all()
+        booths = (await db.execute(select(Booth))).scalars().all()
         open_count = (await db.execute(select(func.count()).select_from(Visit).where(Visit.ended_at.is_(None)))).scalar_one()
     sessions_total = sum((Decimal(x) for x in visit_rows), Decimal(0))
     products_total = sum((Decimal(s.unit_price) * s.quantity for s in sales), Decimal(0))
+    booth_names = {booth.id: booth.name for booth in booths}
+    sales_by_booth = {}
+    for sale in sales:
+        key = sale.booth_id
+        total_quantity, total_amount = sales_by_booth.get(key, (0, Decimal(0)))
+        sales_by_booth[key] = (total_quantity + sale.quantity, total_amount + Decimal(sale.unit_price) * sale.quantity)
+    breakdown = ""
+    if sales_by_booth:
+        breakdown = "\n\nТовары по кабинкам:\n" + "\n".join(
+            f"• {booth_names.get(booth_id, 'Без привязки')}: {qty} шт. — {money(amount)}"
+            for booth_id, (qty, amount) in sorted(sales_by_booth.items(), key=lambda row: (row[0] is None, row[0] or 0))
+        )
     await message.answer(
         f"📊 Сегодня, {now_local.strftime('%d.%m.%Y')}\n"
         f"Закрытых сеансов: {len(visit_rows)} — {money(sessions_total)}\n"
         f"Продаж товаров: {sum(s.quantity for s in sales)} шт. — {money(products_total)}\n"
         f"Всего записанной выручки: {money(sessions_total + products_total)}\n"
-        f"Сейчас занято кабинок: {open_count}"
+        f"Сейчас занято кабинок: {open_count}{breakdown}"
     )
 
 
 async def main():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text(
+            "ALTER TABLE product_sales ADD COLUMN IF NOT EXISTS booth_id INTEGER "
+            "REFERENCES booths(id)"
+        ))
     bot = Bot(TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
