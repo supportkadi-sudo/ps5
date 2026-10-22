@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Club CRM API",
-    "version": "0.1.0",
-    "description": "Frontend-first proposed contract. All amounts integer UZS. Commands transactional and idempotent. Mock is not payment evidence."
+    "version": "0.2.0",
+    "description": "Contract-first CRM API. Django implements commands marked x-backend-implemented. Mock-only operations remain explicitly marked. Integer UZS; server bills cumulative started minutes and rounds the bill once to nearest 500, ties up."
   },
   "paths": {
     "/api/v1/accounts": {
@@ -15,7 +15,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -51,7 +59,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -94,7 +102,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/start": {
@@ -106,7 +115,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -142,7 +159,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -193,7 +210,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/precheck": {
@@ -205,7 +223,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -241,7 +267,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -292,7 +318,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/resume": {
@@ -304,7 +331,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -340,7 +375,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -391,7 +426,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/close": {
@@ -403,7 +439,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -439,7 +483,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -490,7 +534,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/lines": {
@@ -502,7 +547,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -538,7 +591,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -589,7 +642,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/remove-line": {
@@ -601,7 +655,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -637,7 +699,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -688,7 +750,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/accounts/{id}/payments": {
@@ -700,7 +763,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -736,7 +807,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -787,7 +858,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/shifts/open": {
@@ -799,7 +871,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -835,7 +915,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -878,7 +958,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/shifts/{id}/close": {
@@ -890,7 +971,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -926,7 +1015,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -977,7 +1066,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/expenses": {
@@ -989,7 +1079,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1025,7 +1123,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1068,7 +1166,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/catalog/products": {
@@ -1080,7 +1179,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1116,7 +1223,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1159,7 +1266,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/inventory/receipts": {
@@ -1171,7 +1279,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1207,7 +1323,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1250,7 +1366,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/inventory/adjustments": {
@@ -1262,7 +1379,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1298,7 +1423,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1341,7 +1466,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/club/tariffs": {
@@ -1353,7 +1479,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1389,7 +1523,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1432,7 +1566,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/club/booths": {
@@ -1444,7 +1579,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1480,7 +1623,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1523,7 +1666,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/settings/payment-methods": {
@@ -1535,7 +1679,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1571,7 +1723,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1614,7 +1766,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/settings/review-links": {
@@ -1626,7 +1779,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1662,7 +1823,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1705,7 +1866,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": false
       }
     },
     "/api/v1/access/users": {
@@ -1717,7 +1879,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Workspace"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
                 }
               }
             }
@@ -1753,7 +1923,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1796,7 +1966,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": false
       }
     },
     "/api/v1/workspace": {
@@ -1844,7 +2015,7 @@
             }
           },
           "409": {
-            "description": "Success",
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1858,7 +2029,8 @@
           {
             "sessionCookie": []
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/auth/login": {
@@ -1905,7 +2077,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/auth/logout": {
@@ -1920,7 +2093,8 @@
           {
             "sessionCookie": []
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/reports": {
@@ -1972,7 +2146,8 @@
           {
             "sessionCookie": []
           }
-        ]
+        ],
+        "x-backend-implemented": true
       }
     },
     "/api/v1/auth/csrf": {
@@ -1989,6 +2164,100 @@
               }
             }
           }
+        },
+        "x-backend-implemented": true
+      }
+    },
+    "/api/v1/accounts/{id}/refund": {
+      "post": {
+        "operationId": "RefundAccount",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundAccount"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Full compensating refund confirmed as physically paid by manager/owner; never a bank integration. Original payments and lines remain.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "Health",
+        "x-backend-implemented": true,
+        "responses": {
+          "200": {
+            "description": "Process alive"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "Readiness",
+        "x-backend-implemented": true,
+        "responses": {
+          "200": {
+            "description": "Database reachable and all migrations applied"
+          },
+          "503": {
+            "description": "Database unavailable or migrations pending"
+          }
+        }
+      }
+    },
+    "/api/v1/schema": {
+      "get": {
+        "operationId": "GetSchema",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This OpenAPI contract, exported unchanged by DRF"
+          }
         }
       }
     }
@@ -2003,7 +2272,8 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 150
           },
           "role": {
             "type": "string",
@@ -2028,10 +2298,12 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "console": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 50
           },
           "tariffId": {
             "type": "string"
@@ -2056,7 +2328,8 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "hourlyRate": {
             "type": "integer",
@@ -2078,10 +2351,12 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 150
           },
           "category": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "salePrice": {
             "type": "integer",
@@ -2391,7 +2666,8 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "kind": {
             "type": "string",
@@ -2435,7 +2711,8 @@
             "enum": [
               "verified_fixture",
               "unverified",
-              "ambiguous"
+              "ambiguous",
+              "verified_source"
             ]
           },
           "accountId": {
@@ -2614,12 +2891,12 @@
         "properties": {
           "revenue": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
           "costOfGoods": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
           "grossProfit": {
@@ -2640,7 +2917,7 @@
             "type": "object",
             "additionalProperties": {
               "type": "integer",
-              "minimum": 0,
+              "minimum": -9007199254740991,
               "maximum": 9007199254740991
             }
           },
@@ -2648,7 +2925,7 @@
             "type": "object",
             "additionalProperties": {
               "type": "integer",
-              "minimum": 0,
+              "minimum": -9007199254740991,
               "maximum": 9007199254740991
             }
           },
@@ -2776,10 +3053,12 @@
         "additionalProperties": false,
         "properties": {
           "username": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 150
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 1024
           }
         },
         "required": [
@@ -2834,10 +3113,12 @@
             "type": "string"
           },
           "customerName": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 150
           },
           "customerPhone": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 50
           },
           "expectedVersion": {
             "type": "integer",
@@ -2916,7 +3197,8 @@
           },
           "quantity": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 2147483647
           },
           "expectedVersion": {
             "type": "integer",
@@ -3033,17 +3315,20 @@
         "properties": {
           "amount": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "category": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           },
           "methodId": {
             "type": "string"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "expectedVersion": {
             "type": "integer",
@@ -3093,7 +3378,8 @@
           },
           "quantity": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 2147483647
           },
           "unitCost": {
             "type": "integer",
@@ -3269,6 +3555,49 @@
           "quantity",
           "revenue",
           "costOfGoods"
+        ]
+      },
+      "CommandResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "entityId",
+          "operation",
+          "version"
+        ]
+      },
+      "RefundAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "restockGoods": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "reason",
+          "restockGoods"
         ]
       }
     },
