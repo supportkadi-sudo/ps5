@@ -46,6 +46,8 @@ export function ClubProvider({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [online, setOnline] = useState(navigator.onLine);
+  const commandLock = useRef(false);
+  const requestEpoch = useRef(0);
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     window.addEventListener("online", update);
@@ -57,15 +59,20 @@ export function ClubProvider({
   }, []);
   useEffect(() => {
     let active = true;
-    const refresh = () =>
-      api
+    const refresh = () => {
+      if (commandLock.current) return;
+      const epoch = requestEpoch.current;
+      return api
         .load()
         .then((x) => {
-          if (active) setW(x);
+          if (active && epoch === requestEpoch.current && !commandLock.current)
+            setW(x);
         })
         .catch((e) => {
-          if (active) setError(String(e.message));
+          if (active && epoch === requestEpoch.current && !commandLock.current)
+            setError(String(e.message));
         });
+    };
     void refresh();
     const timer = setInterval(() => {
       if (!document.hidden) void refresh();
@@ -75,7 +82,6 @@ export function ClubProvider({
       clearInterval(timer);
     };
   }, []);
-  const commandLock = useRef(false);
   const pending = useRef<{ signature: string; command: Command } | null>(null);
   const run: Run = async (name, data, entityId) => {
     if (commandLock.current) return false;
@@ -86,6 +92,7 @@ export function ClubProvider({
       return false;
     }
     commandLock.current = true;
+    requestEpoch.current++;
     setBusy(true);
     setError("");
     try {
@@ -117,7 +124,16 @@ export function ClubProvider({
         </div>
       )}
       {w ? (
-        <Context.Provider value={{ user, w, run, busy, online, logout }}>
+        <Context.Provider
+          value={{
+            user: w.users.find((u) => u.id === user.id) ?? user,
+            w,
+            run,
+            busy,
+            online,
+            logout,
+          }}
+        >
           {children}
         </Context.Provider>
       ) : (

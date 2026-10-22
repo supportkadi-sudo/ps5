@@ -1,10 +1,15 @@
+import { assertSchema, assertPeriod } from "./validation";
 import type { ClubApi, Command, Schema, Workspace, User } from "./types";
 import type { paths } from "./schema";
 // Only adapter changes when Django is available; UI calls the same ClubApi.
 export class HttpApi implements ClubApi {
   private csrf = "";
   constructor(private baseUrl = "") {}
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    path: string,
+    init: RequestInit = {},
+    schema?: keyof Schema,
+  ): Promise<T> {
     const response = await fetch(this.baseUrl + path, {
       ...init,
       credentials: "include",
@@ -15,24 +20,46 @@ export class HttpApi implements ClubApi {
         ...init.headers,
       },
     });
-    if (!response.ok) {
-      const error = (await response.json()) as Schema["Error"];
-      throw Error(error.message || `HTTP ${response.status}`);
+    if (response.status === 204 && response.ok) return undefined as T;
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw Error(
+        response.ok
+          ? "Сервер вернул некорректный ответ. Проверьте результат операции перед повтором."
+          : `HTTP ${response.status}: сервер недоступен или вернул некорректный ответ`,
+      );
     }
-    if (response.status === 204) return undefined as T;
-    return response.json() as Promise<T>;
+    if (!response.ok) {
+      const message =
+        body &&
+        typeof body === "object" &&
+        "message" in body &&
+        typeof body.message === "string"
+          ? body.message
+          : `HTTP ${response.status}`;
+      throw Error(message);
+    }
+    if (schema) assertSchema(schema, body);
+    return body as T;
   }
+
   async login(username: string, password: string): Promise<User> {
     this.csrf = (
-      await this.request<Schema["Csrf"]>("/api/v1/auth/csrf")
+      await this.request<Schema["Csrf"]>("/api/v1/auth/csrf", {}, "Csrf")
     ).csrfToken;
-    const s = await this.request<Schema["Session"]>("/api/v1/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        username,
-        password,
-      } satisfies Schema["LoginRequest"]),
-    });
+    const s = await this.request<Schema["Session"]>(
+      "/api/v1/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          username,
+          password,
+        } satisfies Schema["LoginRequest"]),
+      },
+      "Session",
+    );
     this.csrf = s.csrfToken;
     return s.user;
   }
@@ -41,11 +68,14 @@ export class HttpApi implements ClubApi {
     this.csrf = "";
   }
   async load() {
-    return this.request<Workspace>("/api/v1/workspace");
+    return this.request<Workspace>("/api/v1/workspace", {}, "Workspace");
   }
   async getReport(from: string, to: string) {
+    assertPeriod(from, to);
     return this.request<Schema["Report"]>(
       "/api/v1/reports?" + new URLSearchParams({ from, to }),
+      {},
+      "Report",
     );
   }
   async execute(c: Command) {
@@ -77,6 +107,7 @@ export class HttpApi implements ClubApi {
         headers: { "Idempotency-Key": c.key },
         body: JSON.stringify(c.data),
       },
+      "Workspace",
     );
   }
 }

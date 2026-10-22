@@ -109,7 +109,7 @@ export function managementCommand(
       integer(c.data.remaining);
       const b = w.batches.find((b) => b.id === c.data.batchId);
       if (!b) throw Error("Партия не найдена");
-      if (c.data.remaining > b.quantity)
+      if (c.data.remaining > b.remaining)
         throw Error("Увеличение остатка оформите поступлением");
       b.remaining = c.data.remaining;
       return b.id;

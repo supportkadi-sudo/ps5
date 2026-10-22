@@ -1,3 +1,4 @@
+import { assertSchema, assertPeriod } from "../validation";
 import { snapshot } from "./audit";
 import type { ClubApi, Command, Workspace, User } from "../types";
 import { seed } from "./seed";
@@ -5,21 +6,27 @@ import { recalculate, reportFor } from "./calculations";
 import { accountCommand } from "./accounts";
 import { managementCommand } from "./management";
 export class MockApi implements ClubApi {
-  private user: User | null = null;
+  private userId: string | null = null;
+  private get user(): User | null {
+    return this.state.users.find((u) => u.id === this.userId) ?? null;
+  }
+  private state: Workspace;
   private records: Record<string, { body: string; result: Workspace }> = {};
   constructor(
-    private state = seed(),
+    initialState = seed(),
     private persist?: (w: Workspace) => void,
-  ) {}
+  ) {
+    this.state = structuredClone(initialState);
+  }
   async login(username: string, password: string) {
     if (password !== "demo") throw Error("Демо-пароль: demo");
     const user = this.state.users.find((u) => u.id === username);
     if (!user) throw Error("Пользователь не найден");
-    this.user = user;
-    return user;
+    this.userId = user.id;
+    return structuredClone(user);
   }
   async logout() {
-    this.user = null;
+    this.userId = null;
   }
   async load() {
     if (!this.user) throw Error("Войдите в систему");
@@ -28,7 +35,7 @@ export class MockApi implements ClubApi {
   async getReport(from: string, to: string) {
     if (!this.user || this.user.role === "cashier")
       throw Error("Недостаточно прав");
-    if (from > to) throw Error("Начало периода позже окончания");
+    assertPeriod(from, to);
     return reportFor(recalculate(structuredClone(this.state)), from, to);
   }
   private visible(w: Workspace) {
@@ -68,7 +75,9 @@ export class MockApi implements ClubApi {
     }
     return w;
   }
-  async execute(c: Command) {
+  async execute(command: Command) {
+    const c = structuredClone(command);
+    assertSchema(c.name, c.data);
     if (!this.user) throw Error("Войдите в систему");
     const body = JSON.stringify(c),
       key = this.user.id + ":" + c.key,
@@ -95,7 +104,7 @@ export class MockApi implements ClubApi {
       before: snapshot(this.state, entityId),
       after: snapshot(next, entityId),
     });
-    this.persist?.(next);
+    this.persist?.(structuredClone(next));
     this.state = next;
     this.records[key] = { body, result: structuredClone(next) };
     return this.visible(structuredClone(next));

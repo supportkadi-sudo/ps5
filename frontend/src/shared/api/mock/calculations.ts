@@ -24,27 +24,33 @@ export function recalculate(w: Workspace, now = Date.now()) {
     );
     a.paid = a.payments.reduce((n, p) => n + p.amount, 0);
     a.due = a.total - a.paid;
-    for (const value of [a.total, a.paid, ...a.lines.map((l) => l.cost)])
+    for (const value of [
+      a.gameAmount,
+      a.total,
+      a.paid,
+      ...a.lines.map((l) => l.cost),
+    ])
       integer(value);
   }
   for (const s of w.shifts) {
-    s.expectedCash =
-      s.openingCash +
-      w.accounts
+    s.expectedCash = exactSum([
+      s.openingCash,
+      ...w.accounts
         .flatMap((a) => a.payments)
         .filter(
           (p) =>
             p.shiftId === s.id &&
             w.methods.find((m) => m.id === p.methodId)?.kind === "cash",
         )
-        .reduce((n, p) => n + p.amount, 0) -
-      w.expenses
+        .map((p) => p.amount),
+      ...w.expenses
         .filter(
           (e) =>
             e.shiftId === s.id &&
             w.methods.find((m) => m.id === e.methodId)?.kind === "cash",
         )
-        .reduce((n, e) => n + e.amount, 0);
+        .map((e) => -e.amount),
+    ]);
     s.difference = s.closedAt ? s.actualCash - s.expectedCash : 0;
     if (
       !Number.isSafeInteger(s.expectedCash) ||
@@ -89,10 +95,10 @@ export function reportFor(w: Workspace, from = "", to = "") {
     expenses = w.expenses
       .filter((e) => within(e.createdAt))
       .reduce((n, e) => n + e.amount, 0);
-  const revenueByMethod: Record<string, number> = {};
+  const revenueByMethod: Record<string, number> = Object.create(null);
   for (const p of closed.flatMap((a) => a.payments))
     revenueByMethod[p.methodId] = (revenueByMethod[p.methodId] ?? 0) + p.amount;
-  const paymentsByMethod: Record<string, number> = {};
+  const paymentsByMethod: Record<string, number> = Object.create(null);
   for (const p of w.accounts
     .flatMap((a) => a.payments)
     .filter((p) => within(p.createdAt)))
@@ -113,10 +119,26 @@ export function reportFor(w: Workspace, from = "", to = "") {
     grossProfit: revenue - costOfGoods,
     expenses,
     netResult: revenue - costOfGoods - expenses,
-    cashDifference: w.shifts
-      .filter((s) => s.closedAt && within(s.closedAt))
-      .reduce((n, s) => n + s.difference, 0),
+    cashDifference: exactSum(
+      w.shifts
+        .filter((s) => s.closedAt && within(s.closedAt))
+        .map((s) => s.difference),
+    ),
     paymentsByMethod,
     revenueByMethod,
   };
+}
+
+function exactSum(values: readonly number[]): number {
+  const sum = values.reduce((n, value) => {
+    if (!Number.isSafeInteger(value))
+      throw Error("Сумма выходит за допустимый диапазон");
+    return n + BigInt(value);
+  }, 0n);
+  if (
+    sum > BigInt(Number.MAX_SAFE_INTEGER) ||
+    sum < BigInt(Number.MIN_SAFE_INTEGER)
+  )
+    throw Error("Сумма выходит за допустимый диапазон");
+  return Number(sum);
 }

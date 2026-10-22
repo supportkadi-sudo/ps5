@@ -157,7 +157,9 @@ test("P2P requires explicit fixture match and split cash closes only on confirma
     .getByRole("button", { name: "Предчек · остановить время" })
     .click();
   await page.getByRole("button", { name: "Перейти к оплате" }).click();
-  await page.getByRole("combobox", { name: "Способ оплаты", exact: true }).selectOption("p2p");
+  await page
+    .getByRole("combobox", { name: "Способ оплаты", exact: true })
+    .selectOption("p2p");
   await page.getByLabel("Сумма части, UZS").fill("20000");
   await page.getByLabel("Связать тестовый перевод").selectOption("t1");
   await page.getByRole("checkbox").check();
@@ -173,4 +175,43 @@ test("P2P requires explicit fixture match and split cash closes only on confirma
     .getByRole("button", { name: "Подтверждаю полную оплату · закрыть счёт" })
     .click();
   await expect(page.getByText("Закрыт", { exact: true })).toBeVisible();
+});
+
+test("a delayed refresh cannot undo a newer completed cashier action", async ({
+  page,
+  isMobile,
+}) => {
+  await page.clock.install();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Войти в клуб" }).click();
+  if (isMobile)
+    await page.getByRole("button", { name: "Меню", exact: true }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Смена и касса" })
+    .click();
+  await page.evaluate(async () => {
+    // Test the actual API boundary: retain one old read while a write completes.
+    const { api } = await import("/src/shared/api/client.ts");
+    const original = api.load.bind(api);
+    let first = true;
+    api.load = async () => {
+      const old = await original();
+      if (first) {
+        first = false;
+        return new Promise((resolve) => {
+          window.__releaseOldRead = () => resolve(old);
+        });
+      }
+      return old;
+    };
+  });
+  await page.clock.fastForward(10000);
+  await page.getByRole("spinbutton").fill("100");
+  await page
+    .getByRole("button", { name: "Открыть смену", exact: true })
+    .click();
+  await expect(page.getByText("Смена открыта", { exact: true })).toBeVisible();
+  await page.evaluate(() => window.__releaseOldRead());
+  await expect(page.getByText("Смена открыта", { exact: true })).toBeVisible();
 });

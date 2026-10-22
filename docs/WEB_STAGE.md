@@ -38,3 +38,7 @@ No real Django/database, secure authentication, P2P provider, refund, immutable 
 Time rounding, partial-payment edits, refund permissions and offline policy proposals are in API_CONTRACT.md. Don't turn them silently into production behavior. Paginated server history is a backend integration follow-up. Settings support role editing of three fixtures; provisioning real employees/passwords belongs to secure backend auth.
 
 Rollback: discard the feature branch / revert stage commit. No migrations or production data changes exist.
+
+## Review fixes
+
+See [REVIEW.md](REVIEW.md) for confirmed defects, regression checks and remaining security boundaries. Stored demo data and commands are validated against OpenAPI at runtime. Corrupt/blocked storage is reported at login without deleting records. Use a single demo tab; detected stale-tab writes are blocked, but localStorage is not a transactional multi-user database. Inventory adjustments only decrease available quantity; increases require a receipt.
