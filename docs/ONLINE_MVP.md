@@ -28,7 +28,7 @@ curl --fail http://127.0.0.1:8000/ready
 
 Открыть **http://localhost:8080**. Войти созданным owner, создать персонального кассира в Настройки → Сотрудники. Сид создаёт шесть кабинок, тарифы 40/50/60 тыс., два ручных способа оплаты и две позиции с партиями. Он не создаёт пользователей/пароли, платежи или подтверждённые переводы. Повтор на непустом каталоге отклоняется.
 
-Для доступа с телефона используйте только согласованный demo/staging-хост: HTTPS reverse proxy к web:8080, `DJANGO_DEBUG=0`, явный домен в `DJANGO_ALLOWED_HOSTS`, HTTPS origin в `CSRF_TRUSTED_ORIGINS`, затем пересоздайте api. `WEB_BIND_ADDRESS` по умолчанию loopback; не открывайте публично DEBUG-сборку. PostgreSQL не публикуется. Браузер и API должны иметь один origin; nginx проксирует `/api/`.
+Для доступа с телефона используйте только согласованный demo/staging-хост: HTTPS reverse proxy к web:8080, `DJANGO_DEBUG=0`, явный домен в `DJANGO_ALLOWED_HOSTS`, HTTPS origin в `CSRF_TRUSTED_ORIGINS`, затем пересоздайте api. Внешний reverse proxy обязан перезаписывать `X-Real-IP` адресом соединения клиента (`proxy_set_header X-Real-IP $remote_addr` для nginx); внутренний nginx передаст это значение API, а Django проверит, что оно является IP-адресом. Не принимайте этот заголовок от клиентов напрямую. `WEB_BIND_ADDRESS` по умолчанию loopback; не открывайте публично DEBUG-сборку. PostgreSQL не публикуется. Браузер и API должны иметь один origin; nginx проксирует `/api/`.
 
 ## Разработка без Docker
 
