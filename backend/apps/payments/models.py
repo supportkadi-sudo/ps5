@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from apps.core.models import Entity
+from apps.core.models import Entity, MAX_MONEY
 
 
 class Transfer(Entity):
@@ -12,7 +12,14 @@ class Transfer(Entity):
     evidence_reference = models.CharField(max_length=300, blank=True)
 
     class Meta:
+        indexes = [
+            models.Index(fields=["-received_at", "-id"], name="transfer_hist_idx")
+        ]
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__lte=MAX_MONEY) & models.Q(amount__gt=0),
+                name="payments_transfer_amount_cap",
+            ),
             models.UniqueConstraint(
                 fields=["source", "source_event_id"], name="unique_source_event"
             ),
@@ -41,6 +48,20 @@ class Payment(Entity):
     )
     created_at = models.DateTimeField()
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["-created_at", "-id"], name="payment_hist_idx"),
+            models.Index(
+                fields=["shift", "-created_at", "-id"], name="payment_shift_hist_idx"
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__lte=MAX_MONEY) & models.Q(amount__gt=0),
+                name="payments_payment_amount_cap",
+            ),
+        ]
+
 
 class Refund(Entity):
     account = models.OneToOneField(
@@ -54,6 +75,9 @@ class Refund(Entity):
     restock_goods = models.BooleanField()
     created_at = models.DateTimeField()
 
+    class Meta:
+        indexes = [models.Index(fields=["-created_at", "-id"], name="refund_hist_idx")]
+
 
 class PaymentReversal(Entity):
     refund = models.ForeignKey(
@@ -64,3 +88,11 @@ class PaymentReversal(Entity):
     )
     amount = models.PositiveBigIntegerField()
     method_kind = models.CharField(max_length=10)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__lte=MAX_MONEY) & models.Q(amount__gt=0),
+                name="payments_paymentreversal_amount_cap",
+            ),
+        ]

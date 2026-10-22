@@ -60,6 +60,7 @@ def close_shift(actor, entity_id, data):
         shift.expected_cash == data["actualCash"] or data["reason"].strip(),
         "Discrepancy reason required",
     )
+    money(abs(data["actualCash"] - shift.expected_cash))
     shift.actual_cash = data["actualCash"]
     shift.reason = data["reason"]
     shift.closed_at = timezone.now()

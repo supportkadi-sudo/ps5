@@ -45,3 +45,36 @@ jobs:
       - run: python manage.py test tests --noinput -v 2
         working-directory: backend
       - run: git diff --check
+      - name: Validate Compose configuration
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          names = ['DJANGO_SECRET_KEY', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_HOST', 'POSTGRES_PORT']
+          Path('.env').write_text('\n'.join(f'{name}={os.environ[name]}' for name in names) + '\n')
+          PY
+          docker compose config --quiet
+      - name: Build API image
+        run: docker build --tag club-crm-ci --file backend/Dockerfile .
+      - name: Smoke API image against test PostgreSQL
+        run: |
+          docker run -d --name club-crm-smoke --network host \
+            --env DJANGO_SECRET_KEY --env POSTGRES_DB --env POSTGRES_USER \
+            --env POSTGRES_PASSWORD --env POSTGRES_HOST --env POSTGRES_PORT \
+            club-crm-ci gunicorn config.wsgi:application --bind 127.0.0.1:18000 --workers 1
+          trap 'docker rm -f club-crm-smoke' EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+          import urllib.error
+          for attempt in range(20):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:18000/ready', timeout=2) as response:
+                      assert response.status == 200
+                      print('API image readiness passed')
+                      break
+              except (OSError, urllib.error.URLError):
+                  if attempt == 19:
+                      raise
+                  time.sleep(1)
+          PY

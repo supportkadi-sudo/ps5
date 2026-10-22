@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["ListAccounts"];
         put?: never;
         post: operations["CreateAccount"];
         delete?: never;
@@ -171,7 +171,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["ListExpenses"];
         put?: never;
         post: operations["AddExpense"];
         delete?: never;
@@ -500,6 +500,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListBatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListTransfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListShifts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -532,6 +644,7 @@ export interface components {
             salePrice: number;
             defaultCost: number;
             enabled: boolean;
+            availableStock?: number;
         };
         Batch: {
             id: string;
@@ -590,6 +703,7 @@ export interface components {
             total: number;
             paid: number;
             due: number;
+            refund?: components["schemas"]["Refund"];
         };
         PaymentMethod: {
             id: string;
@@ -617,6 +731,15 @@ export interface components {
             expectedCash: number;
             difference: number;
             reason: string;
+            paymentsByMethod?: {
+                [key: string]: number;
+            };
+            expensesByMethod?: {
+                [key: string]: number;
+            };
+            refundsByMethod?: {
+                [key: string]: number;
+            };
         };
         Expense: {
             id: string;
@@ -849,6 +972,54 @@ export interface components {
         ReviewList: {
             items: components["schemas"]["ReviewLink"][];
         };
+        RefundReversal: {
+            paymentId: string;
+            methodId: string;
+            amount: number;
+        };
+        Refund: {
+            id: string;
+            accountId: string;
+            shiftId: string;
+            actorId: string;
+            reason: string;
+            createdAt: string;
+            restockGoods: boolean;
+            amount: number;
+            reversals: components["schemas"]["RefundReversal"][];
+        };
+        AccountPage: {
+            items: components["schemas"]["Account"][];
+            nextCursor: string | null;
+        };
+        PaymentPage: {
+            items: components["schemas"]["Payment"][];
+            nextCursor: string | null;
+        };
+        ExpensePage: {
+            items: components["schemas"]["Expense"][];
+            nextCursor: string | null;
+        };
+        AuditPage: {
+            items: components["schemas"]["AuditEvent"][];
+            nextCursor: string | null;
+        };
+        RefundPage: {
+            items: components["schemas"]["Refund"][];
+            nextCursor: string | null;
+        };
+        BatchPage: {
+            items: components["schemas"]["Batch"][];
+            nextCursor: string | null;
+        };
+        TransferPage: {
+            items: components["schemas"]["Transfer"][];
+            nextCursor: string | null;
+        };
+        ShiftPage: {
+            items: components["schemas"]["Shift"][];
+            nextCursor: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -858,6 +1029,32 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    ListAccounts: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                shiftId?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPage"];
+                };
+            };
+        };
+    };
     CreateAccount: {
         parameters: {
             query?: never;
@@ -1500,6 +1697,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ListExpenses: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                shiftId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePage"];
                 };
             };
         };
@@ -2520,6 +2742,178 @@ export interface operations {
                 };
                 content: {
                     "image/svg+xml": string;
+                };
+            };
+        };
+    };
+    ListPayments: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                shiftId?: string;
+                accountId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPage"];
+                };
+            };
+        };
+    };
+    ListAudit: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                entityId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+        };
+    };
+    ListRefunds: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                shiftId?: string;
+                accountId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundPage"];
+                };
+            };
+        };
+    };
+    ListBatches: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+                productId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPage"];
+                };
+            };
+        };
+    };
+    ListTransfers: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferPage"];
+                };
+            };
+        };
+    };
+    GetAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped account detail, including original payments and optional compensating refund */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    ListShifts: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Signed actor/role/filter-specific keyset cursor, valid 24h */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Descending timestamp/UUID keyset page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftPage"];
                 };
             };
         };

@@ -11,3 +11,6 @@ class AuditEvent(Entity):
     reason = models.TextField(blank=True)
     before = models.JSONField()
     after = models.JSONField()
+
+    class Meta:
+        indexes = [models.Index(fields=["-at", "-id"], name="audit_hist_idx")]

@@ -27,7 +27,10 @@ def owns(actor, shift):
 
 
 def money(value):
-    require(0 <= value <= MAX_MONEY, "Amount outside supported UZS range")
+    require(
+        type(value) is int and 0 <= value <= MAX_MONEY,
+        "Amount outside supported UZS range",
+    )
     return value
 
 

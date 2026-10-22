@@ -147,3 +147,10 @@ P2P adapter — интеграция с отдельными club Telegram Busin
 `access.User` (Django sessions/roles); `club.Booth/Tariff`; `catalog.Product/PaymentMethod`; `accounts.Account/Segment/Line`; `inventory.Batch/Allocation/StockMovement`; `payments.Transfer/Payment/Refund/PaymentReversal`; `shifts.Shift/Expense`; `audit.AuditEvent`; `core.CommandReceipt`. Небольшие смежные расходы находятся в shifts, а отчёты — в отдельном services-модуле. HTTP/контракт/read projections отделены от бизнес-use cases. Схема меняется миграциями, append-only ограничения реализованы PostgreSQL triggers. Таймер суммирует интервалы до округления начатых минут; итоговый счёт округляется один раз.
 
 Серверные команды возвращают долговременный маленький acknowledgement; read-only repeatable-read Workspace загружается отдельно. Advisory lock + unique actor/key receipt защищают повторы; drawer/account/product locks и version защищают конкурентные изменения. Полный возврат owner/manager — отдельные компенсации без удаления исходной оплаты. Подробные правила, ограничения и переход от mock в `docs/BACKEND_STAGE.md`.
+
+
+## 11. Завершение серверного этапа (последовательные PR)
+
+Review fixes остаются в #3; независимые области выделены в #4 (employee/password/rate limiting/review QR) и следующий history PR. `access` владеет role/version/password use cases и DB login buckets; `club.reviews` — управлением HTTPS review links; `api.projections/scopes/pagination/history` — scoped чтением и signed keyset pages, без денежных расчётов во views. PostgreSQL authorization shared/exclusive gate согласует изменения прав с денежными транзакциями. Исторические индексы и monetary CHECK constraints изменяются миграциями.
+
+Workspace ограничен рабочими subsets, полная история доступна через страницы и account detail. Server summaries считают полные остатки/итоги независимо от страниц; отчёты по прежнему одному service. UI/мобильные клиенты используют DTO и authoritative aggregates, не повторяют FIFO, time billing, balance или role logic. Внешние blockers не маскируются: live Telegram/P2P, frontend integration, TLS/production DB grants и реальная backup rehearsal ещё не проверены.

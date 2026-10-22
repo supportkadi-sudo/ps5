@@ -1,5 +1,5 @@
 from django.db import models
-from apps.core.models import Entity
+from apps.core.models import Entity, MAX_MONEY
 
 
 class Account(Entity):
@@ -15,7 +15,21 @@ class Account(Entity):
     final_total = models.PositiveBigIntegerField(null=True)
 
     class Meta:
+        indexes = [
+            models.Index(fields=["-created_at", "-id"], name="acct_hist_idx"),
+            models.Index(
+                fields=["shift", "-created_at", "-id"], name="acct_shift_hist_idx"
+            ),
+        ]
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(hourly_rate__lte=MAX_MONEY),
+                name="accounts_account_hourly_rate_cap",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(final_total__lte=MAX_MONEY),
+                name="accounts_account_final_total_cap",
+            ),
             models.UniqueConstraint(
                 fields=["booth"],
                 condition=models.Q(status__in=["draft", "playing", "awaiting_payment"]),
@@ -67,3 +81,14 @@ class Line(Entity):
     cost = models.PositiveBigIntegerField()
     removed = models.BooleanField(default=False)
     removal_reason = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(unit_price__lte=MAX_MONEY),
+                name="accounts_line_unit_price_cap",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(cost__lte=MAX_MONEY), name="accounts_line_cost_cap"
+            ),
+        ]

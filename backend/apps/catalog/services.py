@@ -40,9 +40,7 @@ def configure(actor, operation, data):
     model, key, fields = CONFIG[operation]
     values = data[key]
     obj = (
-        model.objects.select_for_update().filter(pk=values["id"]).first()
-        if values["id"]
-        else None
+        model.objects.select_for_update().get(pk=values["id"]) if values["id"] else None
     )
     before = snapshot(obj)
     # Method kind has financial meaning. Existing entries snapshot it, but changing it
