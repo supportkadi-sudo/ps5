@@ -2651,6 +2651,12 @@
               "minimum": 0,
               "maximum": 9007199254740991
             }
+          },
+          "productSales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSale"
+            }
           }
         },
         "required": [
@@ -2661,7 +2667,8 @@
           "netResult",
           "cashDifference",
           "paymentsByMethod",
-          "revenueByMethod"
+          "revenueByMethod",
+          "productSales"
         ]
       },
       "Workspace": {
@@ -3228,6 +3235,40 @@
         },
         "required": [
           "csrfToken"
+        ]
+      },
+      "ProductSale": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "revenue": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "costOfGoods": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "productId",
+          "name",
+          "quantity",
+          "revenue",
+          "costOfGoods"
         ]
       }
     },

@@ -172,6 +172,7 @@ export function seed(): Workspace {
       { id: "r2", name: "Яндекс Карты", url: "https://maps.yandex.ru" },
     ],
     report: {
+      productSales: [],
       revenue: 0,
       costOfGoods: 0,
       grossProfit: 0,

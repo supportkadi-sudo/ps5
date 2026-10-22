@@ -120,7 +120,7 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
   );
 }
 function Shell() {
-  const { user, online, logout } = useClub();
+  const { user, online, logout, pending, retry, busy } = useClub();
   const [page, setPage] = useState("cashier"),
     [menu, setMenu] = useState(false);
   const manager = user.role !== "cashier";
@@ -220,6 +220,16 @@ function Shell() {
             </>
           )}
         </div>
+        {pending && (
+          <section className="notice" role="status">
+            Результат команды «{pending.command.name}» не подтверждён. Новые
+            операции заблокированы. При конфликте требуется проверка результата;
+            новый ключ не создаётся.
+            <button disabled={busy || !online} onClick={() => void retry()}>
+              Повторить исходную команду
+            </button>
+          </section>
+        )}
         <main className="content">
           {page === "cashier" ? (
             <Cashier />

@@ -74,3 +74,19 @@ describe("demo storage boundary", () => {
     expect(f.raw()).toBe(raw);
   });
 });
+it("persists mock deduplication atomically with state across reload", async () => {
+  const f = fixture();
+  await f.api.login("owner", "demo");
+  const command = {
+    name: "OpenShift" as const,
+    key: crypto.randomUUID(),
+    data: { openingCash: 100 },
+  };
+  await f.api.execute(command);
+  const restored = createDemoApi(() => f.storage);
+  await restored.login("owner", "demo");
+  await restored.execute(command);
+  const w = await restored.load();
+  expect(w.shifts).toHaveLength(1);
+  expect(w.audit.filter((e) => e.action === "OpenShift")).toHaveLength(1);
+});

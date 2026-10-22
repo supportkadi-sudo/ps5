@@ -1,4 +1,4 @@
-import { MockApi } from "./mock/client";
+import { MockApi, type CommandRecords } from "./mock/client";
 import { seed } from "./mock/seed";
 import { assertSchema } from "./validation";
 import type { ClubApi, Command, Workspace } from "./types";
@@ -24,27 +24,49 @@ export function createDemoApi(
     if (!instance) {
       const raw = read();
       let state: Workspace;
+      let records: CommandRecords = {};
       try {
-        const parsed: unknown = raw === null ? seed() : JSON.parse(raw);
-        assertSchema("Workspace", parsed);
-        state = parsed;
+        const parsed = raw === null ? seed() : JSON.parse(raw);
+        const workspace = parsed?.version === 1 ? parsed.workspace : parsed;
+        // Only derived report data changed; preserve the financial history of old demos.
+        if (workspace?.report && workspace.report.productSales === undefined)
+          workspace.report.productSales = [];
+        assertSchema("Workspace", workspace);
+        state = workspace;
+        if (parsed?.version === 1) {
+          records = parsed.records;
+          if (!records || typeof records !== "object" || Array.isArray(records))
+            throw Error();
+          for (const record of Object.values(records)) {
+            if (typeof record.body !== "string") throw Error();
+            assertSchema("Workspace", record.result);
+          }
+        }
       } catch {
         throw storageError();
       }
       lastRaw = raw;
-      instance = new MockApi(state, (next) => {
-        if (read() !== lastRaw)
-          throw Error(
-            "Демо-данные изменены в другой вкладке. Перезагрузите страницу перед продолжением.",
-          );
-        const serialized = JSON.stringify(next);
-        try {
-          getStorage().setItem(storageKey, serialized);
-        } catch {
-          throw storageError();
-        }
-        lastRaw = serialized;
-      });
+      instance = new MockApi(
+        state,
+        (next, records) => {
+          if (read() !== lastRaw)
+            throw Error(
+              "Демо-данные изменены в другой вкладке. Перезагрузите страницу перед продолжением.",
+            );
+          const serialized = JSON.stringify({
+            version: 1,
+            workspace: next,
+            records,
+          });
+          try {
+            getStorage().setItem(storageKey, serialized);
+          } catch {
+            throw storageError();
+          }
+          lastRaw = serialized;
+        },
+        records,
+      );
     } else if (read() !== lastRaw)
       throw Error(
         "Демо-данные изменены в другой вкладке. Перезагрузите страницу перед продолжением.",

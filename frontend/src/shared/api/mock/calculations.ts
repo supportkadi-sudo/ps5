@@ -1,4 +1,4 @@
-import type { Workspace, Account } from "../types";
+import type { Workspace, Account, Schema } from "../types";
 export function recalculate(w: Workspace, now = Date.now()) {
   for (const a of w.accounts) {
     const seconds = a.segments.reduce(
@@ -113,7 +113,22 @@ export function reportFor(w: Workspace, from = "", to = "") {
     integer(value);
   if (!Number.isSafeInteger(revenue - costOfGoods - expenses))
     throw Error("Сумма выходит за допустимый диапазон");
+  const sales = new Map<string, Schema["ProductSale"]>();
+  for (const line of closed.flatMap((a) => a.lines).filter((l) => !l.removed)) {
+    const row = sales.get(line.productId) ?? {
+      productId: line.productId,
+      name: line.name,
+      quantity: 0,
+      revenue: 0,
+      costOfGoods: 0,
+    };
+    row.quantity = exactSum([row.quantity, line.quantity]);
+    row.revenue = exactSum([row.revenue, line.quantity * line.unitPrice]);
+    row.costOfGoods = exactSum([row.costOfGoods, line.cost]);
+    sales.set(line.productId, row);
+  }
   return {
+    productSales: [...sales.values()],
     revenue,
     costOfGoods,
     grossProfit: revenue - costOfGoods,

@@ -39,3 +39,53 @@ it("sends the same command key and encoded entity id when retrying", async () =>
   expect(fetch.mock.calls[0][1].headers["Idempotency-Key"]).toBe(key);
   expect(fetch.mock.calls[1][1].headers["Idempotency-Key"]).toBe(key);
 });
+it("keeps conflicts, gateway errors and malformed acknowledgements ambiguous", async () => {
+  const { CommandRejected } = await import("./errors");
+  const command = {
+    name: "OpenShift" as const,
+    key: crypto.randomUUID(),
+    data: { openingCash: 0 },
+  };
+  for (const status of [409, 500]) {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { code: "conflict", message: "Проверка", fieldErrors: {} },
+            { status },
+          ),
+        ),
+    );
+    await expect(new HttpApi().execute(command)).rejects.not.toBeInstanceOf(
+      CommandRejected,
+    );
+  }
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
+  );
+  await expect(new HttpApi().execute(command)).rejects.toThrow();
+});
+it("distinguishes a validated definite rejection from uncertain errors", async () => {
+  const { CommandRejected } = await import("./errors");
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { code: "validation", message: "Отклонено", fieldErrors: {} },
+          { status: 422 },
+        ),
+      ),
+  );
+  await expect(
+    new HttpApi().execute({
+      name: "OpenShift",
+      key: crypto.randomUUID(),
+      data: { openingCash: 0 },
+    }),
+  ).rejects.toBeInstanceOf(CommandRejected);
+});

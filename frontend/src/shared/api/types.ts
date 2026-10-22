@@ -3,26 +3,28 @@ export type Schema = components["schemas"];
 export type Workspace = Schema["Workspace"];
 export type User = Schema["User"];
 export type Account = Schema["Account"];
-export type CommandName =
-  | "CreateAccount"
-  | "StartTimer"
-  | "Precheck"
-  | "ResumeTimer"
-  | "CloseAccount"
-  | "AddLine"
-  | "RemoveLine"
-  | "AcceptPayment"
-  | "OpenShift"
-  | "CloseShift"
-  | "AddExpense"
-  | "SaveProduct"
-  | "ReceiveBatch"
-  | "AdjustStock"
-  | "SaveTariff"
-  | "SaveBooth"
-  | "SaveMethod"
-  | "SaveReview"
-  | "SaveUser";
+export const commandNames = [
+  "CreateAccount",
+  "StartTimer",
+  "Precheck",
+  "ResumeTimer",
+  "CloseAccount",
+  "AddLine",
+  "RemoveLine",
+  "AcceptPayment",
+  "OpenShift",
+  "CloseShift",
+  "AddExpense",
+  "SaveProduct",
+  "ReceiveBatch",
+  "AdjustStock",
+  "SaveTariff",
+  "SaveBooth",
+  "SaveMethod",
+  "SaveReview",
+  "SaveUser",
+] as const;
+export type CommandName = (typeof commandNames)[number];
 export type Command = {
   [K in CommandName]: {
     name: K;

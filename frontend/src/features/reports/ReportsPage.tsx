@@ -138,26 +138,15 @@ export function ReportsPage() {
                 потому может отличаться от выручки.
               </p>
               <h3>Продажи товаров</h3>
-              {w.products.map((p) => {
-                const lines = closed
-                  .flatMap((a) => a.lines)
-                  .filter((l) => l.productId === p.id && !l.removed);
-                return (
-                  <div className="line" key={p.id}>
-                    <span>
-                      {p.name}
-                      <small>
-                        {lines.reduce((n, l) => n + l.quantity, 0)} шт.
-                      </small>
-                    </span>
-                    <b>
-                      {money(
-                        lines.reduce((n, l) => n + l.quantity * l.unitPrice, 0),
-                      )}
-                    </b>
-                  </div>
-                );
-              })}
+              {r.productSales.map((p) => (
+                <div className="line" key={p.productId}>
+                  <span>
+                    {p.name}
+                    <small>{p.quantity} шт.</small>
+                  </span>
+                  <b>{money(p.revenue)}</b>
+                </div>
+              ))}
             </Panel>
           </div>
           <Panel title="Расход клуба вне кассы">

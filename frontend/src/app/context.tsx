@@ -6,6 +6,8 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { PendingCommands, type PendingCommand } from "../shared/api/pending";
+import { CommandRejected } from "../shared/api/errors";
 import { api } from "../shared/api/client";
 import type {
   User,
@@ -26,6 +28,8 @@ type State = {
   busy: boolean;
   online: boolean;
   logout: () => void;
+  pending: PendingCommand | null;
+  retry: () => Promise<boolean>;
 };
 const Context = createContext<State | null>(null);
 export const useClub = () => {
@@ -82,8 +86,17 @@ export function ClubProvider({
       clearInterval(timer);
     };
   }, []);
-  const pending = useRef<{ signature: string; command: Command } | null>(null);
-  const run: Run = async (name, data, entityId) => {
+  const pendingStore = useRef(new PendingCommands(() => localStorage, user.id));
+  const [pending, setPending] = useState<PendingCommand | null>(null);
+  const refreshPending = () => setPending(pendingStore.current.read());
+  useEffect(() => {
+    try {
+      refreshPending();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка сохранённой команды");
+    }
+  }, []);
+  const execute = async (getCommand: () => Command) => {
     if (commandLock.current) return false;
     if (!navigator.onLine) {
       setError(
@@ -96,23 +109,39 @@ export function ClubProvider({
     setBusy(true);
     setError("");
     try {
-      const signature = JSON.stringify({ name, data, entityId });
-      const command =
-        pending.current?.signature === signature
-          ? pending.current.command
-          : ({ name, data, entityId, key: crypto.randomUUID() } as Command);
-      pending.current = { signature, command };
-      setW(await api.execute(command));
-      pending.current = null;
+      const command = getCommand();
+      refreshPending();
+      try {
+        const result = await api.execute(command);
+        pendingStore.current.complete(command.key);
+        setW(result);
+      } catch (e) {
+        if (e instanceof CommandRejected)
+          pendingStore.current.complete(command.key);
+        throw e;
+      }
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка операции");
       return false;
     } finally {
+      try {
+        refreshPending();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ошибка сохранения команды");
+      }
       commandLock.current = false;
       setBusy(false);
     }
   };
+  const run: Run = (name, data, entityId) =>
+    execute(() => pendingStore.current.prepare(name, data, entityId));
+  const retry = () =>
+    execute(() => {
+      const p = pendingStore.current.read();
+      if (!p) throw Error("Команда отсутствует");
+      return p.command;
+    });
   return (
     <>
       {error && (
@@ -132,6 +161,8 @@ export function ClubProvider({
             busy,
             online,
             logout,
+            pending,
+            retry,
           }}
         >
           {children}

@@ -1,11 +1,16 @@
 import type { Workspace } from "../types";
 // Snapshot only the changed aggregate, never recursively copy the journal.
-export function snapshot(w: Workspace, id: string): string {
+export function snapshot(
+  w: Workspace,
+  id: string,
+  touchedBatchIds: string[] = [],
+): string {
   const account = w.accounts.find((a) => a.id === id);
   if (account) {
-    const ids = new Set(
-      account.lines.flatMap((l) => l.allocations.map((x) => x.batchId)),
-    );
+    const ids = new Set([
+      ...touchedBatchIds,
+      ...account.lines.flatMap((l) => l.allocations.map((x) => x.batchId)),
+    ]);
     return JSON.stringify({
       account,
       batches: w.batches.filter((b) => ids.has(b.id)),

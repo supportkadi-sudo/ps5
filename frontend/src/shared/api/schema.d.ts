@@ -543,6 +543,7 @@ export interface components {
             revenueByMethod: {
                 [key: string]: number;
             };
+            productSales: components["schemas"]["ProductSale"][];
         };
         Workspace: {
             serverTime: string;
@@ -670,6 +671,13 @@ export interface components {
         };
         Csrf: {
             csrfToken: string;
+        };
+        ProductSale: {
+            productId: string;
+            name: string;
+            quantity: number;
+            revenue: number;
+            costOfGoods: number;
         };
     };
     responses: never;

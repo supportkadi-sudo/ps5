@@ -1,3 +1,4 @@
+import { CommandConflict } from "../errors";
 import type { Workspace, User, Command, Account } from "../types";
 import { editable, integer, reason } from "./calculations";
 export function accountCommand(
@@ -59,7 +60,7 @@ export function accountCommand(
   if (user.role === "cashier" && a.shiftId !== shift.id)
     throw Error("Нет доступа к чужой смене");
   if (c.data.expectedVersion !== a.version)
-    throw Error("Конфликт версии. Обновите данные");
+    throw new CommandConflict("Конфликт версии. Обновите данные");
   editable(a);
   if (c.name === "StartTimer" || c.name === "ResumeTimer") {
     if (a.status !== (c.name === "StartTimer" ? "draft" : "awaiting_payment"))

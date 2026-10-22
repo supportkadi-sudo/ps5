@@ -1,3 +1,4 @@
+import { CommandRejected } from "./errors";
 import { assertSchema, assertPeriod } from "./validation";
 import type { ClubApi, Command, Schema, Workspace, User } from "./types";
 import type { paths } from "./schema";
@@ -20,7 +21,8 @@ export class HttpApi implements ClubApi {
         ...init.headers,
       },
     });
-    if (response.status === 204 && response.ok) return undefined as T;
+    if (response.status === 204 && response.ok && !schema)
+      return undefined as T;
     let body: unknown;
     try {
       body = await response.json();
@@ -39,6 +41,10 @@ export class HttpApi implements ClubApi {
         typeof body.message === "string"
           ? body.message
           : `HTTP ${response.status}`;
+      if ([400, 401, 403, 404, 405, 422].includes(response.status)) {
+        assertSchema("Error", body);
+        throw new CommandRejected(message);
+      }
       throw Error(message);
     }
     if (schema) assertSchema(schema, body);
