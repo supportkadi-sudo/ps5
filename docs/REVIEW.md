@@ -55,3 +55,34 @@ Vitest обновлён до 5.0.5; повторная проверка npm audi
 Формат локального демо-хранилища теперь version=1 с workspace и receipts. Для отката к старой версии сначала экспортируйте демо-запись; старый код не умеет читать envelope. Не очищайте хранилище для обхода ошибки и не стирайте pending при неразрешённом результате. Серверная сверка/разрешение конфликтов остаётся задачей backend-этапа.
 
 Результаты локального прогона: `npm run check:contract` — без drift; `npm test` — 38 tests / 7 files; `npm run build` — успешно; `npx playwright test --workers=2` — 20/20 (desktop/mobile, включая старый polling regression и оба каталога). Скриншоты из повторного технического прогона не включаются в исправления: они генерируются тестами и доступны как CI artifacts; оформление не перерабатывается. Полный diff проверяется относительно предыдущего head PR, включая staged generated types.
+
+## Первый Django/PostgreSQL кассовый срез — 22 октября 2026
+
+Отдельная ветка `feat/production-cashier` от актуального head PR #2 `403b90a9`; исходная ветка не менялась. Перед реализацией прочитаны README, ARCHITECTURE, AGENTS, API_CONTRACT, OpenAPI, WEB_STAGE и этот review; проверены все шесть resolved review threads, открытый статус PR #2 и доступные ветки. Выявленное расхождение «mock считает секунды, новое задание требует минуты» зафиксировано: сервер считает совокупные начатые минуты; mock не выдаётся за production calculator. Архитектура OpenAPI уточнена как contract-first с единственным JSON Schema, используемым DRF и TypeScript.
+
+Реализованы модульный Django/DRF backend, PostgreSQL schema/migrations и DB constraints; персональные session/CSRF auth и роли; каталоги/кабинки/тарифы/методы; смены, расходы и сверка; счета, отдельные таймерные команды, FIFO reserve/return, части оплаты и отдельное закрытие; полный компенсирующий возврат owner/manager; append-only PostgreSQL triggers; durable receipts с uniqueness и transaction advisory locks; row locks/version; consistent read snapshots и отчёты. P2P adapter boundary принимает только unverified уведомления; публичной проверки/симуляции банков нет. Детальные правила и запуск: BACKEND_STAGE.md.
+
+### Реально выполнено локально
+
+- Python **3.12.14**, Django **5.2.18**, DRF **3.18.3**, PostgreSQL **16.15**. PostgreSQL запущен отдельно для тестов в scratch; создана чистая БД club, все миграции применены. Django каждый прогон отдельно создал test_club с нуля и применил миграции, включая triggers. SQLite не использовался.
+- **24 backend tests** прошли: реальные password/session login/CSRF rotation/logout; server roles/чужая смена/скрытые costs; полный кассовый сценарий; состояния/недоплата/переплата; минутные границы и ничья округления; FIFO двух партий и точное восстановление; одинаковый timestamp аудита; rollback после stock/payment write при отказе аудита; DB запрет UPDATE/DELETE; handover; причины и сверка; full refund без удаления истории; отчёт с возвратом в следующем периоде; request/response contract и реальные routes.
+- Гонки в отдельных PostgreSQL connections: два запроса одного expense key → одна запись и одинаковый ack; одна version счёта → один победитель; две одновременные оплаты → одна принята; последняя единица товара на двух счетах → одно списание; конкурентное занятие кабинки → один счёт. Receipt дополнительно воспроизведён **двумя отдельными Python-процессами**: один расход и один persisted ack без общей памяти.
+- `manage.py check`, `makemigrations --check --dry-run` — прошли, schema drift отсутствует. `ruff check --select F,E9`, `ruff format --check` — прошли.
+- OpenAPI → TypeScript generation, **38 frontend unit/API/storage tests**, TypeScript/Vite production build — прошли. Frontend implementation не менялся; обновлён только generated DTO. Backend/frontend browser end-to-end не выполнялся; UI всё ещё DEMO. Прежние Playwright-каталоги не перегенерировались, UI не изменён.
+- `git diff --check`, полный staged diff и поиск секретов проверяются перед фиксацией; в diff только пример env, локальные/CI disposable значения и искусственные тестовые данные. Реальных credentials/клиентов/финансовых данных нет.
+
+Ограничение среды проверки: Docker недоступен, PostgreSQL использован из распакованных Ubuntu packages. В root-only user namespace для запуска тестового PostgreSQL потребовалась локальная libc UID/stat compatibility shim; она **вне репозитория**, не меняет SQL/транзакции/движок и не нужна в обычном Docker/CI. Поэтому Docker image/Compose runtime локально не проверены; добавлен воспроизводимый PostgreSQL 16 CI. Это не проверка production runtime или реальной кассы клуба.
+
+### Что ещё требуется
+
+HttpApi ещё ожидает Workspace вместо ack; отдельное подключение описано пошагово в BACKEND_STAGE.md, включая stock-summary, отсутствие SaveUser/SaveReview server endpoints и реальный browser journey. Не реализованы live P2P, частичные возвраты, offline mutations, ограничение login rate, production DB grants/TLS, пагинация и backup/restore rehearsal. Без этих этапов не заявляем production-ready. Формальный Security scan не выполнялся; данный раздел описывает ручную проверку и тесты.
+
+Rollback — revert backend change set с сохранением volume/schema/receipts, либо forward-fix после начала кассовой работы. Не откатывать миграции с финансовыми данными и не удалять volumes. Никакого мержа/production deploy не было.
+
+CI follow-up: первый backend run остановился до checkout/tests из-за одинарных кавычек в docker --health-cmd (runner не сохранил команду одним аргументом). Исправлен сам workflow на стандартные двойные кавычки; денежные/складские тесты не менялись и не ослаблялись. Итог повторного CI указан в PR.
+
+## Follow-up review PR #3
+
+Оба новых regression tests сначала воспроизвели дефекты: refund без CSRF в OpenAPI и полный список чужих переводов. Refund и logout теперь явно требуют X-CSRFToken; тест выполняет настоящий session login и refund с отсутствующим/ошибочным/правильным токеном. Transfer selector общий для read API: owner/manager видят все; cashier — только связанные оплаты своих смен **и** своих счетов, плюс непривязанные уведомления от открытия текущей собственной смены до server now с положительной суммой не больше долга одного из awaiting_payment счетов этой смены. Без открытой смены кандидаты не выдаются. Это правило видимости, не подтверждение перевода. Есть проверки чужой смены, старого/будущего/слишком большого перевода и полного списка управляющего.
+
+Остальные большие пробелы аудита вынесены в последовательные зависимые изменения: сотрудники/пароли/rate limit/QR и bounded workspace/history. PR #2 остаётся открытым; его код/ветка не меняются.

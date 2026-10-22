@@ -1,6 +1,6 @@
 # Архитектура CRM клуба
 
-Статус документа: целевая архитектура первой версии. Web/mock слой реализован; Django/PostgreSQL — следующий этап. Контракт и ограничения прототипа: `docs/API_CONTRACT.md`, `docs/WEB_STAGE.md`. Если решение меняется, обновить этот документ в том же PR, что и код.
+Статус документа: целевая архитектура первой версии. Web/mock слой реализован; первый Django/PostgreSQL кассовый срез добавлен в `backend/`. Web ещё не подключён к нему; запуск и фактическая схема — `docs/BACKEND_STAGE.md`. Контракт и ограничения прототипа: `docs/API_CONTRACT.md`, `docs/WEB_STAGE.md`. Если решение меняется, обновить этот документ в том же PR, что и код.
 
 ## 1. Архитектурное решение
 
@@ -106,7 +106,7 @@ mobile/                       # Expo приложение; добавлять п
 
 - Backend владеет правилами и итоговыми суммами.
 - Для кассира все операции выполняются через DRF API; Django Admin можно использовать как технический инструмент управляющего, но он не заменяет продуктовую админку и права API.
-- OpenAPI генерируется из DRF схемы и является контрактом для TypeScript-клиента.
+- OpenAPI ведётся contract-first в `contracts/openapi.json`: DRF валидирует команды по этому же JSON Schema и экспортирует его через `/api/v1/schema`; TypeScript генерируется из того же источника. Не вводить независимые DTO в serializers. `x-backend-implemented` и route/response tests контролируют соответствие реальному DRF API.
 - Входные команды отделяй от read-моделей там, где use case меняет деньги, склад или состояние счёта.
 - Изменения платежа, счёта и stock movement должны выполняться атомарно либо оставаться в явном состоянии ручной проверки.
 - Схемы API должны поддерживать версии/совместимость; breaking change обновляет web/mobile клиент и тесты в одном change set.
@@ -141,3 +141,9 @@ P2P adapter — интеграция с отдельными club Telegram Busin
 - как Telegram Business account предоставляет достоверные transfer events для HUMO/Uzcard;
 - порядок возврата денег, комиссий и товара после оплаченного счёта;
 - формулы маржи/наценки, момент признания расходов и финансового результата.
+
+## 10. Реализованная схема первого backend среза
+
+`access.User` (Django sessions/roles); `club.Booth/Tariff`; `catalog.Product/PaymentMethod`; `accounts.Account/Segment/Line`; `inventory.Batch/Allocation/StockMovement`; `payments.Transfer/Payment/Refund/PaymentReversal`; `shifts.Shift/Expense`; `audit.AuditEvent`; `core.CommandReceipt`. Небольшие смежные расходы находятся в shifts, а отчёты — в отдельном services-модуле. HTTP/контракт/read projections отделены от бизнес-use cases. Схема меняется миграциями, append-only ограничения реализованы PostgreSQL triggers. Таймер суммирует интервалы до округления начатых минут; итоговый счёт округляется один раз.
+
+Серверные команды возвращают долговременный маленький acknowledgement; read-only repeatable-read Workspace загружается отдельно. Advisory lock + unique actor/key receipt защищают повторы; drawer/account/product locks и version защищают конкурентные изменения. Полный возврат owner/manager — отдельные компенсации без удаления исходной оплаты. Подробные правила, ограничения и переход от mock в `docs/BACKEND_STAGE.md`.

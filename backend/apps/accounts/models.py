@@ -1,0 +1,69 @@
+from django.db import models
+from apps.core.models import Entity
+
+
+class Account(Entity):
+    booth = models.ForeignKey("club.Booth", on_delete=models.PROTECT)
+    shift = models.ForeignKey("shifts.Shift", on_delete=models.PROTECT)
+    customer_name = models.CharField(max_length=150, blank=True)
+    customer_phone = models.CharField(max_length=50, blank=True)
+    status = models.CharField(max_length=20, default="draft")
+    version = models.PositiveBigIntegerField(default=1)
+    hourly_rate = models.PositiveBigIntegerField()
+    created_at = models.DateTimeField()
+    closed_at = models.DateTimeField(null=True)
+    final_total = models.PositiveBigIntegerField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["booth"],
+                condition=models.Q(status__in=["draft", "playing", "awaiting_payment"]),
+                name="one_active_booth",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=[
+                        "draft",
+                        "playing",
+                        "awaiting_payment",
+                        "closed",
+                        "cancelled",
+                    ]
+                ),
+                name="valid_account_status",
+            ),
+        ]
+
+
+class Segment(Entity):
+    account = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="segments"
+    )
+    started_at = models.DateTimeField()
+    stopped_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account"],
+                condition=models.Q(stopped_at__isnull=True),
+                name="one_running_segment",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(stopped_at__isnull=True)
+                | models.Q(stopped_at__gte=models.F("started_at")),
+                name="segment_time_order",
+            ),
+        ]
+
+
+class Line(Entity):
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="lines")
+    product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT)
+    name = models.CharField(max_length=150)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.PositiveBigIntegerField()
+    cost = models.PositiveBigIntegerField()
+    removed = models.BooleanField(default=False)
+    removal_reason = models.TextField(blank=True)

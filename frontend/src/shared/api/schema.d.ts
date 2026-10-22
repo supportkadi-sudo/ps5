@@ -388,6 +388,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RefundAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Readiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSchema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -489,7 +553,7 @@ export interface components {
             receivedAt: string;
             source: string;
             /** @enum {string} */
-            status: "verified_fixture" | "unverified" | "ambiguous";
+            status: "verified_fixture" | "unverified" | "ambiguous" | "verified_source";
             accountId: string;
         };
         Shift: {
@@ -679,6 +743,16 @@ export interface components {
             revenue: number;
             costOfGoods: number;
         };
+        CommandResult: {
+            entityId: string;
+            operation: string;
+            version: number;
+        };
+        RefundAccount: {
+            expectedVersion: number;
+            reason: string;
+            restockGoods: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -710,7 +784,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -740,7 +814,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -775,7 +849,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -805,7 +879,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -840,7 +914,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -870,7 +944,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -905,7 +979,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -935,7 +1009,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -970,7 +1044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1000,7 +1074,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1035,7 +1109,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1065,7 +1139,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1100,7 +1174,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1130,7 +1204,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1165,7 +1239,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1195,7 +1269,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1228,7 +1302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1258,7 +1332,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1293,7 +1367,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1323,7 +1397,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1356,7 +1430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1386,7 +1460,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1419,7 +1493,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1449,7 +1523,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1482,7 +1556,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1512,7 +1586,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1545,7 +1619,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1575,7 +1649,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1608,7 +1682,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1638,7 +1712,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1671,7 +1745,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1701,7 +1775,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1734,7 +1808,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1764,7 +1838,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1797,7 +1871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1827,7 +1901,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1860,7 +1934,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
                 };
             };
             /** @description Success */
@@ -1890,7 +1964,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1946,7 +2020,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Success */
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1995,7 +2069,9 @@ export interface operations {
     Logout: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-CSRFToken": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2059,6 +2135,96 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Csrf"];
                 };
+            };
+        };
+    };
+    RefundAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundAccount"];
+            };
+        };
+        responses: {
+            /** @description Full compensating refund confirmed as physically paid by manager/owner; never a bank integration. Original payments and lines remain. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResult"];
+                };
+            };
+        };
+    };
+    Health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Process alive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Readiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Database reachable and all migrations applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Database unavailable or migrations pending */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GetSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This OpenAPI contract, exported unchanged by DRF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
