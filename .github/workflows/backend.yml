@@ -19,7 +19,7 @@ jobs:
           POSTGRES_PASSWORD: ci-only-disposable-password
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U club -d club'
+          --health-cmd "pg_isready -U club -d club"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DJANGO_SECRET_KEY: ci-only-disposable-key-not-used-outside-isolated-tests

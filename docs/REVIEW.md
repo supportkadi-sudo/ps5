@@ -78,3 +78,5 @@ Vitest обновлён до 5.0.5; повторная проверка npm audi
 HttpApi ещё ожидает Workspace вместо ack; отдельное подключение описано пошагово в BACKEND_STAGE.md, включая stock-summary, отсутствие SaveUser/SaveReview server endpoints и реальный browser journey. Не реализованы live P2P, частичные возвраты, offline mutations, ограничение login rate, production DB grants/TLS, пагинация и backup/restore rehearsal. Без этих этапов не заявляем production-ready. Формальный Security scan не выполнялся; данный раздел описывает ручную проверку и тесты.
 
 Rollback — revert backend change set с сохранением volume/schema/receipts, либо forward-fix после начала кассовой работы. Не откатывать миграции с финансовыми данными и не удалять volumes. Никакого мержа/production deploy не было.
+
+CI follow-up: первый backend run остановился до checkout/tests из-за одинарных кавычек в docker --health-cmd (runner не сохранил команду одним аргументом). Исправлен сам workflow на стандартные двойные кавычки; денежные/складские тесты не менялись и не ослаблялись. Итог повторного CI указан в PR.
