@@ -7,6 +7,7 @@ from apps.core.rules import management
 from apps.access.services import user_dto
 from apps.club.models import ReviewLink
 from apps.club.reviews import review_dto
+from rest_framework.exceptions import ValidationError
 
 
 class EmployeeView(CommandView):
@@ -39,7 +40,10 @@ class ReviewQrView(APIView):
         management(request.user)
         obj = ReviewLink.objects.get(pk=id, enabled=True)
         stream = io.BytesIO()
-        qrcode.make(obj.url, image_factory=SvgPathImage).save(stream)
+        try:
+            qrcode.make(obj.url, image_factory=SvgPathImage).save(stream)
+        except (qrcode.exceptions.DataOverflowError, ValueError):
+            raise ValidationError("Review URL exceeds QR byte capacity")
         response = HttpResponse(stream.getvalue(), content_type="image/svg+xml")
         response["Content-Disposition"] = f'inline; filename="review-{obj.pk}.svg"'
         response["Content-Security-Policy"] = (

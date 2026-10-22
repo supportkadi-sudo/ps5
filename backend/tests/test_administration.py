@@ -301,3 +301,18 @@ class AdministrationTests(CashierCase):
         employee.refresh_from_db()
         self.assertEqual(employee.password, old_hash)
         self.assertEqual(employee.version, 1)
+
+    def test_oversize_unicode_review_rejected_and_legacy_qr_is_not_500(self):
+        url = "https://example.com/" + "😀" * 970
+        body = {
+            "review": {"id": "", "name": "Oversize", "url": url, "enabled": True},
+            "expectedVersion": 0,
+            "reason": "QR regression",
+        }
+        with self.assertRaises(ValidationError):
+            self.command("SaveReview", body, actor=self.owner)
+        self.assertFalse(ReviewLink.objects.filter(url=url).exists())
+        legacy = ReviewLink.objects.create(name="Legacy", url=url, enabled=True)
+        self.client.force_authenticate(self.owner)
+        response = self.client.get(f"/api/v1/settings/review-links/{legacy.pk}/qr")
+        self.assertEqual(response.status_code, 400)
