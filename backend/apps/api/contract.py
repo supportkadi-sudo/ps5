@@ -26,8 +26,30 @@ def validate(name, value):
         "$ref": "#/components/schemas/" + name,
         "components": CONTRACT["components"],
     }
+
+    def credentials(item):
+        return isinstance(item, dict) and any(
+            "password" in key.lower() or credentials(entry)
+            for key, entry in item.items()
+        )
+
+    credential_request = credentials(value)
     errors = list(Draft202012Validator(schema).iter_errors(value))
     if errors:
         raise ValidationError(
-            {".".join(map(str, e.path)) or "body": e.message for e in errors}
+            {
+                ".".join(map(str, e.path)) or "body": (
+                    "Invalid credential value" if credential_request else e.message
+                )
+                for e in errors
+            }
         )
+
+
+def validate_command(operation, value):
+    for methods in CONTRACT["paths"].values():
+        for op in methods.values():
+            if op.get("operationId") == operation:
+                ref = op["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+                return validate(ref.rsplit("/", 1)[1], value)
+    raise ValidationError("Unknown command")

@@ -283,7 +283,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["ListReviewLinks"];
         put?: never;
         post: operations["SaveReview"];
         delete?: never;
@@ -299,7 +299,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["ListEmployees"];
         put?: never;
         post: operations["SaveUser"];
         delete?: never;
@@ -452,6 +452,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/access/users/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/review-links/{id}/qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetReviewQr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -461,6 +509,9 @@ export interface components {
             name: string;
             /** @enum {string} */
             role: "owner" | "manager" | "cashier";
+            username?: string;
+            isActive?: boolean;
+            version?: number;
         };
         Booth: {
             id: string;
@@ -593,6 +644,8 @@ export interface components {
             name: string;
             /** Format: uri */
             url: string;
+            enabled?: boolean;
+            version?: number;
         };
         Report: {
             revenue: number;
@@ -752,6 +805,49 @@ export interface components {
             expectedVersion: number;
             reason: string;
             restockGoods: boolean;
+        };
+        EmployeeInput: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            role: "owner" | "manager" | "cashier";
+            isActive: boolean;
+        };
+        SaveEmployee: {
+            user: components["schemas"]["EmployeeInput"];
+            expectedVersion: number;
+            reason: string;
+            username?: string;
+            password?: string;
+        } & unknown;
+        ResetPassword: {
+            expectedVersion: number;
+            reason: string;
+            password: string;
+        };
+        ChangePassword: {
+            expectedVersion: number;
+            reason: string;
+            oldPassword: string;
+            newPassword: string;
+        };
+        ReviewInput: {
+            id: string;
+            name: string;
+            /** Format: uri */
+            url: string;
+            enabled: boolean;
+        };
+        SaveReviewLink: {
+            review: components["schemas"]["ReviewInput"];
+            expectedVersion: number;
+            reason: string;
+        };
+        EmployeeList: {
+            items: components["schemas"]["User"][];
+        };
+        ReviewList: {
+            items: components["schemas"]["ReviewLink"][];
         };
     };
     responses: never;
@@ -1849,6 +1945,26 @@ export interface operations {
             };
         };
     };
+    ListReviewLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewList"];
+                };
+            };
+        };
+    };
     SaveReview: {
         parameters: {
             query?: never;
@@ -1861,7 +1977,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveReview"];
+                "application/json": components["schemas"]["SaveReviewLink"];
             };
         };
         responses: {
@@ -1871,7 +1987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"];
                 };
             };
             /** @description Success */
@@ -1912,6 +2028,26 @@ export interface operations {
             };
         };
     };
+    ListEmployees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeList"];
+                };
+            };
+        };
+    };
     SaveUser: {
         parameters: {
             query?: never;
@@ -1924,7 +2060,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveUser"];
+                "application/json": components["schemas"]["SaveEmployee"];
             };
         };
         responses: {
@@ -1934,7 +2070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
+                    "application/json": components["schemas"]["CommandResult"];
                 };
             };
             /** @description Success */
@@ -2058,6 +2194,16 @@ export interface operations {
             /** @description Success */
             401: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Login failure rate limit, Retry-After header */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2225,6 +2371,156 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ResetPassword: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPassword"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResult"];
+                };
+            };
+            /** @description Success */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ChangePassword: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-CSRFToken": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePassword"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResult"];
+                };
+            };
+            /** @description Success */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    GetReviewQr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/svg+xml": string;
+                };
             };
         };
     };

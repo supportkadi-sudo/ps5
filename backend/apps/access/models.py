@@ -3,6 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    version = models.PositiveBigIntegerField(default=1)
     role = models.CharField(
         max_length=10,
         choices=[(x, x) for x in ("owner", "manager", "cashier")],
@@ -16,3 +17,9 @@ class User(AbstractUser):
                 name="valid_user_role",
             )
         ]
+
+
+class LoginBucket(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    window_started = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0)

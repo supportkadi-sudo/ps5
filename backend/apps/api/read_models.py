@@ -10,6 +10,9 @@ from apps.inventory.models import Batch
 from apps.payments.selectors import visible_transfers
 from apps.audit.models import AuditEvent
 from apps.reports.services import report
+from apps.access.services import user_dto
+from apps.club.reviews import review_dto
+from apps.club.models import ReviewLink
 
 
 def timestamp(value):
@@ -191,13 +194,7 @@ def workspace(actor):
             )
     return dict(
         serverTime=timestamp(now),
-        users=[
-            dict(
-                id=str(actor.pk),
-                name=actor.get_full_name() or actor.username,
-                role=actor.role,
-            )
-        ],
+        users=[user_dto(actor)],
         booths=rows(
             Booth.objects.all().order_by("id"),
             dict(
@@ -247,6 +244,9 @@ def workspace(actor):
             ),
         ),
         audit=audit_rows,
-        reviews=[],
+        reviews=[
+            review_dto(r)
+            for r in ReviewLink.objects.filter(enabled=True).order_by("id")
+        ],
         report=report() if privileged else empty_report(),
     )
