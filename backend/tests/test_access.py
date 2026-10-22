@@ -84,8 +84,8 @@ class AccessTests(CashierCase):
             format="json",
             HTTP_X_REAL_IP="198.51.100.21",
         )
-        self.assertEqual(first.status_code, 401, first.content)
-        self.assertEqual(second.status_code, 401, second.content)
+        self.assertEqual(first.status_code, 403, first.content)
+        self.assertEqual(second.status_code, 403, second.content)
         self.assertEqual(same_ip.status_code, 429, same_ip.content)
 
     def test_cashier_cannot_manage_or_read_costs_or_other_shift(self):
