@@ -36,3 +36,7 @@ Thumbs.db
 *.dump
 *.sql.gz
 backups/
+
+# Browser verification
+playwright-report/
+test-results/
