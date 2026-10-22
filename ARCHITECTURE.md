@@ -154,3 +154,7 @@ P2P adapter — интеграция с отдельными club Telegram Busin
 Review fixes остаются в #3; независимые области выделены в #4 (employee/password/rate limiting/review QR) и следующий history PR. `access` владеет role/version/password use cases и DB login buckets; `club.reviews` — управлением HTTPS review links; `api.projections/scopes/pagination/history` — scoped чтением и signed keyset pages, без денежных расчётов во views. PostgreSQL authorization shared/exclusive gate согласует изменения прав с денежными транзакциями. Исторические индексы и monetary CHECK constraints изменяются миграциями.
 
 Workspace ограничен рабочими subsets, полная история доступна через страницы и account detail. Server summaries считают полные остатки/итоги независимо от страниц; отчёты по прежнему одному service. UI/мобильные клиенты используют DTO и authoritative aggregates, не повторяют FIFO, time billing, balance или role logic. Внешние blockers не маскируются: live Telegram/P2P, frontend integration, TLS/production DB grants и реальная backup rehearsal ещё не проверены.
+
+## Онлайн-MVP
+
+Web по умолчанию использует HttpApi, same-origin sessions/CSRF и Django/PostgreSQL. Финансовая pending-команда хранится в actor-scoped PostgreSQL слоте, не в browser storage. Ответ CommandResult → bounded workspace reload; полные журналы — keyset pages/detail; stock/shift totals — server aggregates. Offline mutations отложены. Подробности: docs/ONLINE_MVP.md.

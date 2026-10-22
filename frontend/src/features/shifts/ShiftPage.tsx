@@ -1,3 +1,5 @@
+import { ServerShiftHistory } from "../reports/ServerHistory";
+import { isDemo } from "../../shared/api/client";
 import { useClub } from "../../app/context";
 import { Form, Panel } from "../../shared/ui/Form";
 import { money, date } from "../../shared/lib/format";
@@ -51,9 +53,14 @@ export function ShiftPage() {
               <span>Расходы смены</span>
               <strong>
                 {money(
-                  w.expenses
-                    .filter((e) => e.shiftId === shift.id)
-                    .reduce((n, e) => n + e.amount, 0),
+                  !isDemo
+                    ? Object.values(shift.expensesByMethod ?? {}).reduce(
+                        (n, v) => n + v,
+                        0,
+                      )
+                    : w.expenses
+                        .filter((e) => e.shiftId === shift.id)
+                        .reduce((n, e) => n + e.amount, 0),
                 )}
               </strong>
             </div>
@@ -69,12 +76,15 @@ export function ShiftPage() {
                   <span>{m.name}</span>
                   <b>
                     {money(
-                      w.accounts
-                        .flatMap((a) => a.payments)
-                        .filter(
-                          (p) => p.shiftId === shift.id && p.methodId === m.id,
-                        )
-                        .reduce((n, p) => n + p.amount, 0),
+                      !isDemo
+                        ? (shift.paymentsByMethod?.[m.id] ?? 0)
+                        : w.accounts
+                            .flatMap((a) => a.payments)
+                            .filter(
+                              (p) =>
+                                p.shiftId === shift.id && p.methodId === m.id,
+                            )
+                            .reduce((n, p) => n + p.amount, 0),
                     )}
                   </b>
                 </div>
@@ -155,7 +165,8 @@ export function ShiftPage() {
           </Panel>
         </>
       )}
-      <Panel title="История смен">
+      {!isDemo && <ServerShiftHistory />}
+      <Panel title="Последние смены рабочего места">
         {w.shifts.length === 0 && <p className="empty">Смен пока нет.</p>}
         {w.shifts
           .slice()
@@ -186,7 +197,7 @@ export function ShiftPage() {
             </div>
           ))}
       </Panel>
-      <Panel title="Расходы">
+      <Panel title="Последние расходы рабочего места">
         {w.expenses.length === 0 && (
           <p className="empty">Нет записанных расходов.</p>
         )}

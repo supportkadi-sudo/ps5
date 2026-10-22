@@ -1,3 +1,5 @@
+import { LiveEmployees, LiveReviews } from "./ServerAdministration";
+import { isDemo } from "../../shared/api/client";
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useClub } from "../../app/context";
@@ -37,7 +39,7 @@ export function SettingsPage() {
           ["club", "Кабинки и тарифы"],
           ["methods", "Оплата"],
           ["reviews", "Отзывы и QR"],
-          ...(user.role === "owner" ? [["users", "Сотрудники"]] : []),
+          ["users", "Сотрудники"],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -84,7 +86,7 @@ export function SettingsPage() {
                 submit={async (d) => {
                   const ok = await run("SaveTariff", {
                     tariff: {
-                      id: tariff?.id ?? crypto.randomUUID(),
+                      id: tariff?.id ?? (isDemo ? crypto.randomUUID() : ""),
                       name: d.name,
                       hourlyRate: Number(d.hourlyRate),
                     },
@@ -149,7 +151,7 @@ export function SettingsPage() {
                 submit={async (d) => {
                   const ok = await run("SaveBooth", {
                     booth: {
-                      id: booth?.id ?? crypto.randomUUID(),
+                      id: booth?.id ?? (isDemo ? crypto.randomUUID() : ""),
                       name: d.name,
                       console: d.console,
                       tariffId: d.tariffId,
@@ -210,7 +212,7 @@ export function SettingsPage() {
               submit={async (d) => {
                 const ok = await run("SaveMethod", {
                   method: {
-                    id: method?.id ?? crypto.randomUUID(),
+                    id: method?.id ?? (isDemo ? crypto.randomUUID() : ""),
                     name: d.name,
                     kind: d.kind as "cash" | "p2p" | "other",
                     enabled: d.enabled === "true",
@@ -227,7 +229,8 @@ export function SettingsPage() {
           </p>
         </Panel>
       )}
-      {tab === "reviews" && (
+      {tab === "reviews" && !isDemo && <LiveReviews />}
+      {tab === "reviews" && isDemo && (
         <>
           <Panel title="Страницы отзывов">
             <p>
@@ -269,7 +272,7 @@ export function SettingsPage() {
                 submit={async (d) => {
                   const ok = await run("SaveReview", {
                     review: {
-                      id: review?.id ?? crypto.randomUUID(),
+                      id: review?.id ?? (isDemo ? crypto.randomUUID() : ""),
                       name: d.name,
                       url: d.url,
                     },
@@ -282,7 +285,8 @@ export function SettingsPage() {
           </Panel>
         </>
       )}
-      {tab === "users" && user.role === "owner" && (
+      {tab === "users" && !isDemo && <LiveEmployees />}
+      {tab === "users" && isDemo && user.role === "owner" && (
         <Panel title="Персональные сотрудники">
           {w.users.map((u) => (
             <div className="line" key={u.id}>

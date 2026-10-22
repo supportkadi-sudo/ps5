@@ -24,6 +24,15 @@ test("lost HTTP response survives reload with the original key/body and no dupli
         (await import("/src/shared/api/client.ts")).api.load(),
       ),
   };
+  await page.route("**/api/v1/workspace", async (route) =>
+    route.fulfill({ json: await server.load() }),
+  );
+  await page.route("**/api/v1/access/users", async (route) =>
+    route.fulfill({ json: { items: (await server.load()).users } }),
+  );
+  await page.route("**/api/v1/settings/review-links", async (route) =>
+    route.fulfill({ json: { items: (await server.load()).reviews } }),
+  );
   const requests: { key: string; body: string }[] = [];
   await page.route("**/api/v1/expenses", async (route) => {
     const request = route.request();
@@ -36,7 +45,14 @@ test("lost HTTP response survives reload with the original key/body and no dupli
       data: JSON.parse(body),
     });
     if (requests.length === 1) await route.abort("failed");
-    else await route.fulfill({ json: result });
+    else
+      await route.fulfill({
+        json: {
+          entityId: result.expenses.at(-1)!.id,
+          operation: "AddExpense",
+          version: 1,
+        },
+      });
   });
   const install = async () =>
     page.evaluate(async () => {

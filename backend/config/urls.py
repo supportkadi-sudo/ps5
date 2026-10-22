@@ -13,6 +13,8 @@ from apps.api.administration import EmployeeView, ReviewView, ReviewQrView
 
 from apps.api.history import HistoryView, AccountDetailView
 
+from apps.api.pending import PendingView
+
 COMMAND_ROUTES = {
     "access/users": "SaveUser",
     "access/users/<str:id>/password": "ResetPassword",
@@ -38,6 +40,7 @@ COMMAND_ROUTES = {
     "settings/payment-methods": "SaveMethod",
 }
 urlpatterns = [
+    path("api/v1/commands/pending", PendingView.as_view()),
     path("health", health),
     path("ready", ready),
     path("api/v1/auth/csrf", CsrfView.as_view()),

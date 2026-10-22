@@ -2983,6 +2983,78 @@
           }
         }
       }
+    },
+    "/api/v1/commands/pending": {
+      "get": {
+        "operationId": "GetPendingCommand",
+        "responses": {
+          "200": {
+            "description": "Actor-scoped durable retry slot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingState"
+                }
+              }
+            }
+          }
+        },
+        "x-backend-implemented": true
+      },
+      "post": {
+        "operationId": "StagePendingCommand",
+        "parameters": [
+          {
+            "name": "X-CSRFToken",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "$ref": "#/components/schemas/PendingCommand"
+                      }
+                    },
+                    "required": [
+                      "command"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "completeKey": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "completeKey"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Staged or cleared; does not execute command"
+          }
+        },
+        "x-backend-implemented": true
+      }
     }
   },
   "components": {
@@ -4879,6 +4951,59 @@
         "required": [
           "items",
           "nextCursor"
+        ]
+      },
+      "PendingCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "data"
+        ]
+      },
+      "PendingState": {
+        "type": "object",
+        "properties": {
+          "pending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "actorId": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "$ref": "#/components/schemas/PendingCommand"
+                  }
+                },
+                "required": [
+                  "actorId",
+                  "command"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "pending"
         ]
       }
     },
