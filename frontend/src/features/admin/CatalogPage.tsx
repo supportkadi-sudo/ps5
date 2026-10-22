@@ -22,7 +22,7 @@ export function CatalogPage() {
       </div>
       <Panel title="Товары">
         <div className="table-scroll">
-          <table>
+          <table className="catalog-table">
             <thead>
               <tr>
                 <th>Товар</th>
@@ -37,21 +37,23 @@ export function CatalogPage() {
             <tbody>
               {w.products.map((p) => (
                 <tr key={p.id}>
-                  <td>
+                  <td data-label="Товар">
                     <b>{p.name}</b>
                     <small>
                       {p.category} · {p.enabled ? "Активен" : "Отключён"}
                     </small>
                   </td>
-                  <td>
+                  <td data-label="Остаток">
                     {w.batches
                       .filter((b) => b.productId === p.id)
                       .reduce((n, b) => n + b.remaining, 0)}
                   </td>
-                  <td>{money(p.salePrice)}</td>
-                  <td>{money(p.defaultCost)}</td>
-                  <td>{money(p.salePrice - p.defaultCost)}</td>
-                  <td>
+                  <td data-label="Цена продажи">{money(p.salePrice)}</td>
+                  <td data-label="Себестоимость">{money(p.defaultCost)}</td>
+                  <td data-label="Прибыль / шт.">
+                    {money(p.salePrice - p.defaultCost)}
+                  </td>
+                  <td data-label="Наценка / маржа / ×">
                     {p.defaultCost
                       ? (
                           ((p.salePrice - p.defaultCost) / p.defaultCost) *
@@ -70,7 +72,7 @@ export function CatalogPage() {
                       ? (p.salePrice / p.defaultCost).toFixed(2) + "×"
                       : "—"}
                   </td>
-                  <td>
+                  <td data-label="Действие">
                     <button onClick={() => setEdit(p.id)}>Изменить</button>
                   </td>
                 </tr>

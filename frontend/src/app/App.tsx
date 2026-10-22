@@ -136,13 +136,18 @@ function Shell() {
       : []),
   ];
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setMenu(false);
+      }}
+    >
       <aside className={"sidebar " + (menu ? "open" : "")}>
         <div className="brand">
           <Gamepad2 /> PLAYROOM <span>CLUB OS</span>
         </div>
         <span className="nav-caption">УПРАВЛЕНИЕ КЛУБОМ</span>
-        <nav>
+        <nav id="club-navigation">
           {nav.map((n) => (
             <button
               key={n.id}
@@ -174,11 +179,20 @@ function Shell() {
           </button>
         </div>
       </aside>
+      {menu && (
+        <button
+          className="nav-scrim"
+          aria-label="Закрыть меню"
+          onClick={() => setMenu(false)}
+        />
+      )}
       <div className="main-shell">
         <header className="topbar">
           <button
             className="mobile-menu"
             aria-label="Меню"
+            aria-expanded={menu}
+            aria-controls="club-navigation"
             onClick={() => setMenu(!menu)}
           >
             {menu ? <X /> : <Menu />}
