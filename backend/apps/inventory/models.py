@@ -1,5 +1,5 @@
 from django.db import models
-from apps.core.models import Entity
+from apps.core.models import Entity, MAX_MONEY
 
 
 class Batch(Entity):
@@ -10,11 +10,16 @@ class Batch(Entity):
     unit_cost = models.PositiveBigIntegerField()
 
     class Meta:
+        indexes = [models.Index(fields=["-received_at", "-id"], name="batch_hist_idx")]
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(unit_cost__lte=MAX_MONEY),
+                name="inventory_batch_unit_cost_cap",
+            ),
             models.CheckConstraint(
                 condition=models.Q(remaining__lte=models.F("quantity")),
                 name="batch_remaining_bounded",
-            )
+            ),
         ]
 
 
@@ -25,6 +30,14 @@ class Allocation(Entity):
     batch = models.ForeignKey(Batch, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_cost = models.PositiveBigIntegerField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(unit_cost__lte=MAX_MONEY),
+                name="inventory_allocation_unit_cost_cap",
+            ),
+        ]
 
 
 class StockMovement(Entity):

@@ -16,7 +16,7 @@ P2P notifications have explicit evidence state. Fixtures use verified_fixture, v
 
 Offline: stage 1 caches app shell and persists mock sandbox locally. Mutations are blocked when browser reports offline; no payment/closure queue. This intentionally avoids inventing an unapproved cash offline policy. There are no unsynchronized server records in this stage; local data is always labeled DEMO. Stage 2/3 durable outbox requires separate approval of permitted commands, stock conflicts, timestamps and reconciliation. Network errors must retain pending command key for safe retry.
 
-The first Django/PostgreSQL server slice is implemented separately from PR #2. Operations marked x-backend-implemented are real; SaveUser/SaveReview remain mock-only and have no server route. Mock authorization/idempotency/FIFO are not production guarantees. See BACKEND_STAGE.md for exact scope and verification.
+The first Django/PostgreSQL server slice is implemented separately from PR #2. Operations marked x-backend-implemented are real; Employee and review endpoints now use server SaveEmployee/SaveReviewLink DTOs; the old SaveUser/SaveReview schema names are retained solely for the unchanged mock. Mock authorization/idempotency/FIFO are not production guarantees. See BACKEND_STAGE.md for exact scope and verification.
 
 Report.productSales is authoritative for the selected period: productId, snapshot name, quantity, unrounded goods revenue and FIFO costOfGoods. It is computed from the full server/mock history, never from the bounded workspace. A removed line is excluded. Zero-sales products are omitted.
 
@@ -26,6 +26,13 @@ The frontend persists one unresolved command DTO and UUID per actor before sendi
 
 Django commands return `CommandResult {entityId,operation,version}` atomically stored with the command. A replay returns the original acknowledgement, never an old privileged Workspace. The temporary response union also permits Workspace for the existing mock; the frontend HTTP adapter is **not connected** in this backend PR and requires the explicit integration steps in BACKEND_STAGE.md. Schema/DTO changes do not make the existing HttpApi production-compatible by themselves.
 
-Workspace and reports use a single read-only REPEATABLE READ transaction. Cashier cost fields are redacted; batches/audit payload are absent, own shifts/accounts/expenses only. Workspace is currently unpaginated, a known limit before production. `GET /health` and `/ready` are public; schema/workspace/report require authentication.
+Workspace and reports use a single read-only REPEATABLE READ transaction. Cashier cost fields are redacted; batches/audit payload are absent, own shifts/accounts/expenses only. Workspace is bounded; full history uses signed cursor pages documented in BACKEND_STAGE.md. `GET /health` and `/ready` are public; schema/workspace/report require authentication.
 
 Refunds are recognized on the issuing date, so revenue, COGS and net method aggregates may be negative for a period. ProductSales retains gross closed-account sales; returned revenue/cost is separately reflected in the aggregate result. This avoids rewriting old sales periods. A cancelled/refunded account retains original `paid` and payment history; audit contains its compensating refund. Full refund confirms money already handed back by the manager; it never calls a bank.
+
+
+## Server completion contracts
+
+Every implemented session POST declares required X-CSRFToken; domain POSTs also require Idempotency-Key. DRF validation resolves the request DTO from the endpoint's actual OpenAPI definition, not a handwritten parallel serializer. Employee/review commands require version and reason; manager can administer cashiers only, owner can administer all except removal of last active owner. Password commands are write-only, HMAC-hashed for receipts, never persisted as raw DTO/outbox and invalidate old sessions. Login rate limits are PostgreSQL-based; 429 has Retry-After.
+
+History pages use `{items,nextCursor}` with signed actor/role/resource/filter-bound timestamp/UUID cursors. Workspace subsets are explicitly not historical totals. Account detail retains initial payments and optional Refund with compensating reversal references. Shift method totals and Product.availableStock are authoritative full-DB aggregates. Reports remain the existing period API with gross productSales and separate net refund effects. See BACKEND_STAGE.md for exact limits, operational assumptions, TLS/DB/backup requirements and frontend connection order.

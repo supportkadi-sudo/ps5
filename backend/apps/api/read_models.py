@@ -1,9 +1,8 @@
 import json
 from django.utils import timezone
-from apps.accounts.models import Account
-from apps.accounts.calculations import amounts
-from apps.shifts.models import Shift, Expense
-from apps.shifts.services import expected
+from django.db.models import Q, Sum
+from apps.api.scopes import accounts_for, shifts_for, expenses_for
+from apps.api.projections import rows, account_row, empty_report, timestamp, shift_row
 from apps.club.models import Booth, Tariff
 from apps.catalog.models import Product, PaymentMethod
 from apps.inventory.models import Batch
@@ -15,137 +14,21 @@ from apps.club.reviews import review_dto
 from apps.club.models import ReviewLink
 
 
-def timestamp(value):
-    return value.isoformat() if value else ""
-
-
-def rows(queryset, fields):
-    result = []
-    for obj in queryset:
-        row = {}
-        for public, private in fields.items():
-            value = getattr(obj, private)
-            if public == "id" or public.endswith("Id"):
-                value = str(value) if value is not None else ""
-            if public.endswith("At"):
-                value = timestamp(value)
-            row[public] = value
-        result.append(row)
-    return result
-
-
-PAYMENT_FIELDS = dict(
-    id="id",
-    accountId="account_id",
-    shiftId="shift_id",
-    methodId="method_id",
-    amount="amount",
-    transferId="transfer_id",
-    createdAt="created_at",
-    actorId="actor_id",
-)
-
-
-def account_row(a, actor, now):
-    privileged = actor.role != "cashier"
-    row = rows(
-        [a],
-        dict(
-            id="id",
-            boothId="booth_id",
-            shiftId="shift_id",
-            customerName="customer_name",
-            customerPhone="customer_phone",
-            status="status",
-            version="version",
-            hourlyRate="hourly_rate",
-            createdAt="created_at",
-            closedAt="closed_at",
-        ),
-    )[0]
-    row.update(amounts(a, now))
-    row["segments"] = rows(
-        a.segments.all().order_by("started_at", "id"),
-        dict(startedAt="started_at", stoppedAt="stopped_at"),
-    )
-    row["lines"] = []
-    for line in a.lines.all().order_by("id"):
-        item = rows(
-            [line],
-            dict(
-                id="id",
-                productId="product_id",
-                name="name",
-                quantity="quantity",
-                unitPrice="unit_price",
-                cost="cost",
-                removed="removed",
-                removalReason="removal_reason",
-            ),
-        )[0]
-        item["allocations"] = (
-            rows(
-                line.allocations.all(),
-                dict(batchId="batch_id", quantity="quantity", unitCost="unit_cost"),
-            )
-            if privileged
-            else []
-        )
-        if not privileged:
-            item["cost"] = 0
-        row["lines"].append(item)
-    row["payments"] = rows(
-        a.payments.all().order_by("created_at", "id"), PAYMENT_FIELDS
-    )
-    return row
-
-
-def empty_report():
-    return dict(
-        revenue=0,
-        costOfGoods=0,
-        grossProfit=0,
-        expenses=0,
-        netResult=0,
-        cashDifference=0,
-        paymentsByMethod={},
-        revenueByMethod={},
-        productSales=[],
-    )
-
-
 def workspace(actor):
     privileged = actor.role != "cashier"
     now = timezone.now()
-    shifts = Shift.objects.all().order_by("opened_at", "id")
-    accounts = Account.objects.all().order_by("created_at", "id")
-    expenses = Expense.objects.all().order_by("created_at", "id")
-    if not privileged:
-        shifts = shifts.filter(cashier=actor)
-        accounts = accounts.filter(shift__cashier=actor)
-        expenses = expenses.filter(shift__cashier=actor)
-    shift_rows = []
-    for shift in shifts:
-        row = rows(
-            [shift],
-            dict(
-                id="id",
-                cashierId="cashier_id",
-                openedAt="opened_at",
-                closedAt="closed_at",
-                openingCash="opening_cash",
-                actualCash="actual_cash",
-                reason="reason",
-            ),
-        )[0]
-        row["expectedCash"] = (
-            shift.expected_cash if shift.closed_at else expected(shift)
-        )
-        row["actualCash"] = shift.actual_cash if shift.actual_cash is not None else 0
-        row["difference"] = (
-            row["actualCash"] - row["expectedCash"] if shift.closed_at else 0
-        )
-        shift_rows.append(row)
+    shifts = shifts_for(actor).order_by("-opened_at", "-id")[:20]
+    scoped_accounts = accounts_for(actor)
+    recent_closed = list(
+        scoped_accounts.filter(status__in=["closed", "cancelled"])
+        .order_by("-created_at", "-id")
+        .values_list("pk", flat=True)[:50]
+    )
+    accounts = scoped_accounts.filter(
+        Q(status__in=["draft", "playing", "awaiting_payment"]) | Q(pk__in=recent_closed)
+    ).order_by("created_at", "id")
+    expenses = expenses_for(actor).order_by("-created_at", "-id")[:50]
+    shift_rows = [shift_row(shift) for shift in shifts]
     products = rows(
         Product.objects.all().order_by("id"),
         dict(
@@ -157,11 +40,19 @@ def workspace(actor):
             enabled="enabled",
         ),
     )
+    stock = {
+        str(row["product_id"]): row["stock"]
+        for row in Batch.objects.values("product_id").annotate(stock=Sum("remaining"))
+    }
+    from apps.core.rules import money
+
+    for product in products:
+        product["availableStock"] = money(stock.get(product["id"], 0))
     if not privileged:
         for product in products:
             product["defaultCost"] = 0
     transfers = []
-    for transfer in visible_transfers(actor, now):
+    for transfer in visible_transfers(actor, now).reverse()[:100]:
         row = rows(
             [transfer],
             dict(
@@ -178,7 +69,9 @@ def workspace(actor):
         transfers.append(row)
     audit_rows = []
     if privileged:
-        for event in AuditEvent.objects.select_related("actor").order_by("at", "id"):
+        for event in AuditEvent.objects.select_related("actor").order_by("-at", "-id")[
+            :50
+        ]:
             audit_rows.append(
                 dict(
                     id=str(event.pk),
@@ -211,7 +104,7 @@ def workspace(actor):
         ),
         products=products,
         batches=rows(
-            Batch.objects.all().order_by("received_at", "id"),
+            Batch.objects.all().order_by("-received_at", "-id")[:100],
             dict(
                 id="id",
                 productId="product_id",
@@ -248,5 +141,7 @@ def workspace(actor):
             review_dto(r)
             for r in ReviewLink.objects.filter(enabled=True).order_by("id")
         ],
-        report=report() if privileged else empty_report(),
+        report=report(timezone.localdate(), timezone.localdate())
+        if privileged
+        else empty_report(),
     )

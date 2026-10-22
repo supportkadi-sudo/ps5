@@ -17,7 +17,7 @@ docker compose run --rm api python manage.py create_employee cashier --role cash
 docker compose up -d api
 ```
 
-Пароли вводятся интерактивно, проверяются стандартными Django password validators и хешируются. Нет seed/demo-паролей, автоматического суперпользователя или доверия роли из запроса. Owner/manager/cashier — персональные Django users. Django Admin и HTTP-управление сотрудниками в этот срез не входят. Отключение пользователя: `is_active=False` через доверенный Django management shell; существующая сессия перестаёт авторизовываться.
+Пароли вводятся интерактивно, проверяются стандартными Django password validators и хешируются. Нет seed/demo-паролей, автоматического суперпользователя или доверия роли из запроса. Owner/manager/cashier — персональные Django users. Django Admin не включён; защищённый HTTP employee API описан ниже. CLI нужен для bootstrap. Отключение пользователя: `is_active=False` через доверенный Django management shell; существующая сессия перестаёт авторизовываться.
 
 `GET /health` — процесс жив. `GET /ready` — PostgreSQL доступен и все миграции применены, иначе 503. `GET /api/v1/schema` — OpenAPI (после входа). API доступен на `http://localhost:8000` и опубликован только на loopback. Compose не запускает миграции автоматически и не публикует порт БД.
 
@@ -62,13 +62,13 @@ docker compose up -d api
 
 ## Контракт и frontend — честная граница среза
 
-`contracts/openapi.json` остаётся единственным источником DTO: DRF проверяет входы JSON Schema из него, `/schema` экспортирует тот же документ. Это **contract-first**, а не две параллельные serializer/schema модели. `x-backend-implemented` отличает реальные операции от mock-only SaveUser/SaveReview. Тест проверяет все реальные URL, request schema и ack; response DTO проверяются интеграционными тестами; TS генерируется существующим openapi-typescript.
+`contracts/openapi.json` остаётся единственным источником DTO: DRF проверяет входы JSON Schema из него, `/schema` экспортирует тот же документ. Это **contract-first**, а не две параллельные serializer/schema модели. Все кассовые, employee и review endpoints реализованы; legacy mock DTO отделены от серверных request DTO. Тест проверяет все реальные URL, request schema и ack; response DTO проверяются интеграционными тестами; TS генерируется существующим openapi-typescript.
 
 Frontend не подключён в этом PR: сохранена текущая демоверсия PR #2, изменён только генерируемый schema.d.ts. Контракт пока допускает Workspace (mock) или CommandResult (Django) на командных ответах. Для подключения отдельным связанным этапом:
 
 1. HttpApi.execute валидирует CommandResult, проверяет operation/entityId и после успешного ack загружает workspace. При потере ответа/ошибке reload сохраняет прежнюю pending-команду и ключ; повтор безопасен. Не подменять ack локальным mock-состоянием.
 2. Включить HttpApi вместо MockApi только явно выбранным API-режимом; отдельный origin/domain storage namespace. Оставить DEMO-индикатор только в mock-режиме. Публиковать web/API под одним HTTPS origin; для localhost Vite proxy /api на backend.
-3. Серверный cashier read model не содержит партий/закупочных цен; UI остатков использовать отдельный безопасный stock summary API (нужен следующий контракт). Пользователей/QR не редактировать, пока не реализованы настоящие endpoints. Добавить UI возвратов/компенсаций и статусов P2P.
+3. Серверный cashier read model не содержит партий/закупочных цен; UI остатков использовать Product.availableStock из API, не складывать усечённые batches. Employee/review UI переключить на настоящие endpoints с серверными DTO, version, reason и матрицей прав. Добавить UI возвратов/компенсаций и статусов P2P.
 4. Сквозной browser test с настоящим login, CSRF, PostgreSQL, потерей ack, частичной оплатой, отдельным close и сверкой смены. Удалить mock-расчёты из production bundle/режима. Не включать offline mutations до отдельного согласованного протокола.
 
 ## Проверки и ограничения
@@ -89,11 +89,11 @@ npm run build
 
 PostgreSQL role тестов должна иметь CREATEDB. CI `.github/workflows/backend.yml` запускает миграции на чистой PostgreSQL 16 и тесты; web CI проверяет DTO drift и прежнюю демоверсию. Локальная проверка и её фактические результаты — в `docs/REVIEW.md`.
 
-Не выполнены: production HTTPS/reverse proxy, ограничение частоты login, production DB grants, backup/restore rehearsal, browser-интеграция с backend, пагинация истории, индивидуальные делегированные permissions manager, частичные возвраты, real Telegram Business и offline-команды. Workspace пока читает всю доступную историю — использовать лишь для проверки первого среза; до эксплуатации добавить bounded history и отдельные детальные endpoints. Не называем систему production-ready.
+Внешние/операционные этапы: production HTTPS/reverse proxy, применение production DB grants, backup/restore rehearsal на сервере, browser-интеграция с backend, real Telegram Business и offline-команды. Login rate limiting, employee/review API и пагинация реализованы ниже. Частичные возвраты и индивидуальные делегированные manager permissions остаются явно вне выбранной минимальной модели, без молчаливого изменения денежных правил. Не называем систему production-ready.
 
 Rollback: до эксплуатации — остановить API и revert только backend commit; сохранить PostgreSQL volume. После появления финансовых данных — сначала backup, затем rollback приложения с сохранением схемы/данных или forward-fix. Не выполнять `migrate ... zero`, `down -v`, TRUNCATE или удаление receipts: это уничтожит историю и защиту повторов. Нет миграции/деплоя на реальном сервере.
 
-## Серверное администрирование (следующий зависимый PR)
+## Серверное администрирование (PR #4, зависит от #3)
 
 Настоящие POST `/access/users` (SaveUser, **SaveEmployee DTO**) и `/settings/review-links` (SaveReview, **SaveReviewLink DTO**) используют существующие маршруты, а не дублирующие CRUD. Старые SaveUser/SaveReview DTO сохраняются исключительно для mock PR #2; server request schema задана в OpenAPI и именно её загружает DRF validator. Не отправлять старую mock-команду на server endpoint.
 
@@ -110,3 +110,18 @@ Login имеет PostgreSQL rate limiting без Redis: LOGIN_RATE_LIMIT=5 не�
 Production настройки: DEBUG=0, случайный SECRET_KEY минимум 32 символа (placeholder/короткий key отклоняется), явные ALLOWED_HOSTS без `*`, HTTPS origin в CSRF_TRUSTED_ORIGINS, secure/HttpOnly/SameSite cookies. SECURE_SSL_REDIRECT включать на TLS termination слое с корректно доверенным proxy, без доверия клиентскому X-Forwarded-Proto. Development Compose остаётся loopback-only, DEBUG=1 пример не production-конфигурация.
 
 DB: отдельный migration owner и runtime LOGIN role; последнему только CONNECT, USAGE schema, SELECT/INSERT/UPDATE/DELETE на нужные operational tables и sequences, без SUPERUSER/CREATEDB/CREATEROLE/DDL/TRUNCATE и владения таблицами. На append-only таблицах дополнительно не выдавать UPDATE/DELETE; triggers сохраняются. Django auth/session таблицам нужны штатные DML права. Test role отдельно CREATEDB. Backup: регулярный `pg_dump --format=custom`, шифрование вне хоста, retention и проверка `pg_restore` на отдельной БД с запуском migrations/readiness и сверкой платежей/кассы. Backup/restore rehearsal на реальном сервере и TLS остаются отдельной операционной проверкой.
+
+
+## История и сверка (следующий последовательный PR после #4)
+
+`GET /accounts`, `/shifts`, `/payments`, `/expenses`, `/audit`, `/refunds`, `/transfers`, `/inventory/batches` возвращают `{items,nextCursor}`. Limit 1–100 (по умолчанию 50). Порядок — timestamp DESC, UUID DESC; индексы соответствуют сортировке и shift scopes. Cursor подписан, действует 24 часа и привязан к сотруднику, текущей роли, виду истории и фильтрам. Нельзя переносить его на другой endpoint, роль, пользователя или иной accountId/shiftId. `nextCursor=null` завершает выборку. Страницы задают верхнюю временную границу первого запроса и keyset, а не смещающийся offset; новые обычные записи не сдвигают страницы. Это не долгоживущий DB snapshot между HTTP-запросами: поздний commit с более ранним timestamp можно увидеть после refresh.
+
+Фильтры: accounts — shiftId/status; payments/refunds — accountId/shiftId; expenses — shiftId; audit — entityId; batches — productId. Неверные UUID, cursor, limit и неизвестные параметры — 400. Права фильтрами не расширяются. Cashier видит account history по принадлежащей смене и платежи/расходы/возвраты своей кассы; owner/manager — все. Audit и закупочные партии доступны только management. `GET /accounts/{id}` возвращает полный scoped счёт с исходными payments и отдельным optional refund (причина, исходные payment IDs, issuing shift и restockGoods). Чужой счёт — 404; прямой POST в read-only историю — 405.
+
+Workspace — рабочая проекция: все активные scoped счета + последние 50 завершённых, последние 20 смен, 50 расходов, 50 audit events, 100 партий и 100 разрешённых transfers. Это серверные пределы, не полный журнал. Продолжение и старые записи получать через page endpoints; source of truth остаётся полная PostgreSQL история. Product.availableStock считается по всем партиям на сервере, независимо от усечённых batch rows. Shift.paymentsByMethod / expensesByMethod / refundsByMethod также используют все операции смены, а не страницу. Суммы received/spent/refunded разделены; expectedCash по-прежнему opening + cash received − cash expenses − cash refunds. Кассиру не раскрываются COGS и audit payload. Workspace.report management показывает текущую локальную дату; для другого периода использовать уже существующий `/reports?from=...&to=...`, не пересчитывать по workspace.
+
+Аудит дополнительных инвариантов: money() отклоняет bool/float и значения вне JS safe range; PostgreSQL CHECK constraints ограничивают сохранённые суммы/себестоимости и положительность payment/expense/notification/reversal. Расхождение смены тоже проверяется на переполнение **до** закрытия. Неизвестный id при обновлении каталога даёт 404, не создаёт новую сущность. Notification adapter проверяет положительный integer amount, непустые bounded source/event_id, aware timestamp; конкурентный одинаковый source_event_id создаёт одну unverified запись, изменившийся payload конфликтует. Нет фиктивного webhook и отсутствует публичная установка verified_source.
+
+Финансовые допущения сохранены: minute-ceil по сумме интервалов, одно округление счёта до 500 с ничьей вверх; edits после первой оплаты запрещены; только полный возврат по исходным методам с причиной и явным restockGoods. Возврат без restock не восстанавливает товар и не уменьшает COGS. Эти ограничения — выбранная модель первого серверного этапа, не обещание частичных банковских refund API.
+
+CI дополнительно проверяет Docker Compose config, собирает API image и запускает Gunicorn readiness against test PostgreSQL. Это тестовый container smoke, не проверка production сервера или frontend/backend browser journey. Полная цепочка: #2 (mock web) → #3 (касса + review fixes) → #4 (администрирование) → history/сверка PR. Ни один автоматически не сливается. После merge предшественника retarget следующего на main и повторные затронутые проверки обязательны.

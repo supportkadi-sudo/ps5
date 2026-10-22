@@ -2,7 +2,7 @@
 
 > Этот файл — основное ТЗ и источник контекста для разработки. Перед изменениями прочитать его полностью.
 >
-> Статус: web/PWA прототип на mock API реализован в `frontend/`. Первый серверный кассовый срез Django/PostgreSQL реализован в `backend/`, web остаётся mock до отдельного подключения. Запуск backend и границы: [docs/BACKEND_STAGE.md](docs/BACKEND_STAGE.md). Старый Telegram-бот не используется. Запуск и проверка: [docs/WEB_STAGE.md](docs/WEB_STAGE.md); контракт: [docs/API_CONTRACT.md](docs/API_CONTRACT.md), [OpenAPI](contracts/openapi.json).
+> Статус: web/PWA прототип на mock API реализован в `frontend/`. Серверный этап Django/PostgreSQL (касса, сотрудники, QR, история и отчёты) реализован в `backend/` в последовательных зависимых PR, web остаётся mock до отдельного подключения. Запуск backend и границы: [docs/BACKEND_STAGE.md](docs/BACKEND_STAGE.md). Старый Telegram-бот не используется. Запуск и проверка: [docs/WEB_STAGE.md](docs/WEB_STAGE.md); контракт: [docs/API_CONTRACT.md](docs/API_CONTRACT.md), [OpenAPI](contracts/openapi.json).
 
 Целевые границы модулей, API, offline-синхронизация и модель данных описаны в [ARCHITECTURE.md](ARCHITECTURE.md). Правила разработки для агента — в [AGENTS.md](AGENTS.md).
 
