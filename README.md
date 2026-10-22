@@ -2,7 +2,7 @@
 
 > Этот файл — основное ТЗ и источник контекста для разработки. Перед изменениями прочитать его полностью.
 >
-> Статус: подготовка новой CRM. Старый Telegram-бот удаляется из текущей версии репозитория. Код новой CRM пока не реализован.
+> Статус: web/PWA прототип на mock API реализован в `frontend/`. Backend пока не реализован. Старый Telegram-бот не используется. Запуск и проверка: [docs/WEB_STAGE.md](docs/WEB_STAGE.md); контракт: [docs/API_CONTRACT.md](docs/API_CONTRACT.md), [OpenAPI](contracts/openapi.json).
 
 Целевые границы модулей, API, offline-синхронизация и модель данных описаны в [ARCHITECTURE.md](ARCHITECTURE.md). Правила разработки для агента — в [AGENTS.md](AGENTS.md).
 

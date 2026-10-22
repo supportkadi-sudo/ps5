@@ -36,3 +36,11 @@ Thumbs.db
 *.dump
 *.sql.gz
 backups/
+
+# Browser verification
+playwright-report/
+test-results/
+
+# Reproducible portable screenshot exports
+docs/screenshots/redesign/all-screens.html
+docs/screenshots/redesign/all-screens.zip
