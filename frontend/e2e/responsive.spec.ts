@@ -105,7 +105,7 @@ test("responsive screens remain readable and contained", async ({
         form = await page.locator(".account-grid .form").boundingBox();
       expect(summary!.y + summary!.height).toBeLessThanOrEqual(form!.y);
     }
-    for (const button of await page.locator(".tabs button").all())
+    for (const button of await page.locator(".tabs:visible button").all())
       expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await nav("Смена и касса");
     await shot("shift");

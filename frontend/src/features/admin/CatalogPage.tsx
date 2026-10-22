@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useClub } from "../../app/context";
 import { Form, Panel } from "../../shared/ui/Form";
+import { Editor } from "../../shared/ui/Editor";
 import { money, date } from "../../shared/lib/format";
 export function CatalogPage() {
   const { w, run } = useClub();
@@ -86,50 +87,50 @@ export function CatalogPage() {
         </p>
       </Panel>
       {edit && (
-        <Panel title={p ? "Изменить товар" : "Новый товар"}>
-          <Form
-            key={edit}
-            fields={[
-              { name: "name", label: "Название", value: p?.name },
-              { name: "category", label: "Категория", value: p?.category },
-              {
-                name: "salePrice",
-                label: "Цена продажи, UZS",
-                type: "number",
-                value: p?.salePrice,
+        <Editor
+          title={p ? "Изменить товар" : "Новый товар"}
+          onClose={() => setEdit("")}
+          key={edit}
+          fields={[
+            { name: "name", label: "Название", value: p?.name },
+            { name: "category", label: "Категория", value: p?.category },
+            {
+              name: "salePrice",
+              label: "Цена продажи, UZS",
+              type: "number",
+              value: p?.salePrice,
+            },
+            {
+              name: "defaultCost",
+              label: "Базовая себестоимость, UZS",
+              type: "number",
+              value: p?.defaultCost,
+            },
+            {
+              name: "enabled",
+              label: "Статус",
+              value: String(p?.enabled ?? true),
+              options: [
+                { value: "true", label: "Активен" },
+                { value: "false", label: "Отключён" },
+              ],
+            },
+          ]}
+          submit={async (d) => {
+            const ok = await run("SaveProduct", {
+              product: {
+                id: p?.id ?? crypto.randomUUID(),
+                name: d.name,
+                category: d.category,
+                salePrice: Number(d.salePrice),
+                defaultCost: Number(d.defaultCost),
+                enabled: d.enabled === "true",
               },
-              {
-                name: "defaultCost",
-                label: "Базовая себестоимость, UZS",
-                type: "number",
-                value: p?.defaultCost,
-              },
-              {
-                name: "enabled",
-                label: "Статус",
-                value: String(p?.enabled ?? true),
-                options: [
-                  { value: "true", label: "Активен" },
-                  { value: "false", label: "Отключён" },
-                ],
-              },
-            ]}
-            submit={async (d) => {
-              const ok = await run("SaveProduct", {
-                product: {
-                  id: p?.id ?? crypto.randomUUID(),
-                  name: d.name,
-                  category: d.category,
-                  salePrice: Number(d.salePrice),
-                  defaultCost: Number(d.defaultCost),
-                  enabled: d.enabled === "true",
-                },
-              });
-              if (ok) setEdit("");
-              return ok;
-            }}
-          />
-        </Panel>
+            });
+            if (ok) setEdit("");
+            return ok;
+          }}
+        />
       )}
       <div className="two-col">
         <Panel title="Поступление новой партии">
@@ -184,7 +185,9 @@ export function CatalogPage() {
           </div>
         ))}
         {adjust && (
-          <Form
+          <Editor
+            title="Корректировка партии"
+            onClose={() => setAdjust("")}
             key={adjust}
             fields={[
               {

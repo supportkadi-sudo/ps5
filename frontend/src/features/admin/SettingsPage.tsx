@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useClub } from "../../app/context";
-import { Form, Panel } from "../../shared/ui/Form";
+import { Panel } from "../../shared/ui/Form";
+import { Editor } from "../../shared/ui/Editor";
 import { money } from "../../shared/lib/format";
 export function SettingsPage() {
   const { w, user, run } = useClub();
@@ -12,6 +13,16 @@ export function SettingsPage() {
     method = w.methods.find((t) => t.id === editing),
     review = w.reviews.find((t) => t.id === editing),
     person = w.users.find((t) => t.id === editing);
+  const editorTitle =
+    tariff || editing === "new-tariff"
+      ? "Тариф"
+      : booth || editing === "new-booth"
+        ? "Кабинка"
+        : tab === "methods"
+          ? "Способ оплаты"
+          : tab === "reviews"
+            ? "Ссылка на отзывы"
+            : "Права сотрудника";
   return (
     <>
       <div className="section-heading">
@@ -56,7 +67,9 @@ export function SettingsPage() {
               + Новый тариф
             </button>
             {(tariff || editing === "new-tariff") && (
-              <Form
+              <Editor
+                title={editorTitle}
+                onClose={() => setEditing("")}
                 key={editing}
                 fields={[
                   { name: "name", label: "Название", value: tariff?.name },
@@ -103,7 +116,9 @@ export function SettingsPage() {
               + Новая кабинка
             </button>
             {(booth || editing === "new-booth") && (
-              <Form
+              <Editor
+                title={editorTitle}
+                onClose={() => setEditing("")}
                 key={editing}
                 fields={[
                   { name: "name", label: "Название", value: booth?.name },
@@ -166,7 +181,9 @@ export function SettingsPage() {
             + Добавить способ оплаты
           </button>
           {editing && (
-            <Form
+            <Editor
+              title={editorTitle}
+              onClose={() => setEditing("")}
               key={editing}
               fields={[
                 { name: "name", label: "Название", value: method?.name },
@@ -236,7 +253,9 @@ export function SettingsPage() {
               <button onClick={() => window.print()}>Печать QR</button>
             </div>
             {editing && (
-              <Form
+              <Editor
+                title={editorTitle}
+                onClose={() => setEditing("")}
                 key={editing}
                 fields={[
                   { name: "name", label: "Сервис", value: review?.name },
@@ -281,7 +300,9 @@ export function SettingsPage() {
             и сессии появятся в backend.
           </p>
           {editing && person && (
-            <Form
+            <Editor
+              title={editorTitle}
+              onClose={() => setEditing("")}
               key={editing}
               fields={[
                 { name: "name", label: "Имя", value: person.name },

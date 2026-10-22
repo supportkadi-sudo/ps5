@@ -42,3 +42,7 @@ Rollback: discard the feature branch / revert stage commit. No migrations or pro
 ## Review fixes
 
 See [REVIEW.md](REVIEW.md) for confirmed defects, regression checks and remaining security boundaries. Stored demo data and commands are validated against OpenAPI at runtime. Corrupt/blocked storage is reported at login without deleting records. Use a single demo tab; detected stale-tab writes are blocked, but localStorage is not a transactional multi-user database. Inventory adjustments only decrease available quantity; increases require a receipt.
+
+## Обновлённый дизайн
+
+Светлая тема, мобильная нижняя навигация и полный каталог экранов: [VISUAL_REVIEW.md](VISUAL_REVIEW.md). Все снимки: [screenshots/redesign/README.md](screenshots/redesign/README.md).

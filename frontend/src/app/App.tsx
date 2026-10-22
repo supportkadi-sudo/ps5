@@ -11,6 +11,7 @@ import {
   WifiOff,
   Menu,
   X,
+  MoreHorizontal,
 } from "lucide-react";
 import { ClubProvider, useClub } from "./context";
 import { api } from "../shared/api/client";
@@ -234,10 +235,42 @@ function Shell() {
             <SettingsPage />
           ) : null}
         </main>
-        <footer>
-          PLAYROOM <span>·</span> Удобная смена начинается здесь <span>·</span>{" "}
-          Все суммы в UZS
-        </footer>
+        <footer>PLAYROOM · Все суммы в UZS</footer>
+        <div className="bottom-nav" role="group" aria-label="Быстрая навигация">
+          {nav.slice(0, 2).map((n) => (
+            <button
+              key={n.id}
+              className={page === n.id ? "active" : ""}
+              onClick={() => {
+                setPage(n.id);
+                setMenu(false);
+              }}
+            >
+              <n.icon size={21} />
+              <span>{n.id === "cashier" ? "Зал и счета" : "Смена"}</span>
+            </button>
+          ))}
+          {manager && (
+            <button
+              className={page === "catalog" ? "active" : ""}
+              onClick={() => {
+                setPage("catalog");
+                setMenu(false);
+              }}
+            >
+              <Package size={21} />
+              <span>Товары</span>
+            </button>
+          )}
+          <button
+            aria-label="Ещё разделы"
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
+          >
+            <MoreHorizontal size={21} />
+            <span>Ещё</span>
+          </button>
+        </div>
       </div>
     </div>
   );

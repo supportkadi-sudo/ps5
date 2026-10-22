@@ -28,7 +28,9 @@ test("cashier journey, persistence, reasoned removal, payment and closure", asyn
     })
     .click();
   await page.getByRole("button", { name: "Запустить таймер" }).click();
-  await expect(page.getByText("Идёт игра", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".detail").getByText("Идёт игра", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: /^Добавить Coca-Cola/ }).click();
   await page.getByRole("button", { name: "Удалить Coca-Cola · 1 л" }).click();
   await page
@@ -47,7 +49,9 @@ test("cashier journey, persistence, reasoned removal, payment and closure", asyn
   await page
     .getByRole("button", { name: "Принять оплату", exact: true })
     .click();
-  await expect(page.getByText("Ожидает оплаты", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".detail").getByText("Ожидает оплаты", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Подтверждаю полную/ }),
   ).toHaveCount(0);
@@ -58,10 +62,14 @@ test("cashier journey, persistence, reasoned removal, payment and closure", asyn
   await page
     .getByRole("button", { name: "Подтверждаю полную оплату · закрыть счёт" })
     .click();
-  await expect(page.getByText("Закрыт", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Закрыт", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Войти в клуб" }).click();
-  await expect(page.getByText("Закрыт", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Закрыт", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
   await nav("Отчёты");
   await expect(
     page.getByRole("heading", { name: "Финансовый результат" }),
@@ -158,14 +166,16 @@ test("P2P requires explicit fixture match and split cash closes only on confirma
     .click();
   await page.getByRole("button", { name: "Перейти к оплате" }).click();
   await page
-    .getByRole("combobox", { name: "Способ оплаты", exact: true })
-    .selectOption("p2p");
+    .getByRole("group", { name: "Способ оплаты", exact: true })
+    .getByRole("button", { name: /P2P/ })
+    .click();
   await page.getByLabel("Сумма части, UZS").fill("20000");
   await page.getByLabel("Связать тестовый перевод").selectOption("t1");
   await page.getByRole("checkbox").check();
   await page
     .getByRole("button", { name: "Принять тестовую оплату", exact: true })
     .click();
+  await page.getByText(/^P2P уведомления ·/).click();
   await expect(page.getByText("Уже связан", { exact: true })).toBeVisible();
   await page.getByRole("checkbox").check();
   await page
@@ -174,7 +184,9 @@ test("P2P requires explicit fixture match and split cash closes only on confirma
   await page
     .getByRole("button", { name: "Подтверждаю полную оплату · закрыть счёт" })
     .click();
-  await expect(page.getByText("Закрыт", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Закрыт", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
 });
 
 test("a delayed refresh cannot undo a newer completed cashier action", async ({

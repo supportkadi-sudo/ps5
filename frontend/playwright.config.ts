@@ -9,11 +9,16 @@ export default defineConfig({
       url: "http://127.0.0.1:4173",
       reuseExistingServer: !process.env.CI,
     },
-    {
-      command: "npm run build && npx vite preview --host 127.0.0.1 --port 4174",
-      url: "http://127.0.0.1:4174",
-      reuseExistingServer: !process.env.CI,
-    },
+    ...(!process.env.SCREEN_CATALOG
+      ? [
+          {
+            command:
+              "npm run build && npx vite preview --host 127.0.0.1 --port 4174",
+            url: "http://127.0.0.1:4174",
+            reuseExistingServer: !process.env.CI,
+          },
+        ]
+      : []),
   ],
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

@@ -30,4 +30,6 @@ jobs:
         if: always()
         with:
           name: web-test-results
-          path: frontend/test-results
+          path: |
+            frontend/test-results
+            docs/screenshots/redesign

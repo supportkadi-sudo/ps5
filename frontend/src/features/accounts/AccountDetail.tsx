@@ -69,7 +69,7 @@ export function AccountDetail({
                   {a.status === "draft" && (
                     <button
                       disabled={locked}
-                      className="primary"
+                      className="primary mobile-action"
                       onClick={() => run("StartTimer", version, a.id)}
                     >
                       ▶ Запустить таймер
@@ -78,6 +78,9 @@ export function AccountDetail({
                   {["playing", "draft"].includes(a.status) && (
                     <button
                       disabled={locked}
+                      className={
+                        a.status === "playing" ? "mobile-action primary" : ""
+                      }
                       onClick={() => run("Precheck", version, a.id)}
                     >
                       Предчек · остановить время
@@ -210,36 +213,38 @@ export function AccountDetail({
               ) : null}
               {a.status === "awaiting_payment" && a.due === 0 && (
                 <button
-                  className="primary wide"
+                  className="primary wide mobile-action"
                   disabled={locked}
                   onClick={() => run("CloseAccount", version, a.id)}
                 >
                   Подтверждаю полную оплату · закрыть счёт
                 </button>
               )}
-              <h3>P2P уведомления</h3>
-              <p className="muted">
-                Тестовые данные. Реальный Telegram Business не подключён.
-              </p>
-              {w.transfers.map((t) => (
-                <div className="line" key={t.id}>
-                  <div>
-                    <strong>{money(t.amount)}</strong>
-                    <small>
-                      {t.source} · {date(t.receivedAt)}
-                    </small>
+              <details className="p2p-panel">
+                <summary>P2P уведомления · {w.transfers.length}</summary>
+                <p className="muted">
+                  Тестовые данные. Реальный Telegram Business не подключён.
+                </p>
+                {w.transfers.map((t) => (
+                  <div className="line" key={t.id}>
+                    <div>
+                      <strong>{money(t.amount)}</strong>
+                      <small>
+                        {t.source} · {date(t.receivedAt)}
+                      </small>
+                    </div>
+                    <span className="badge">
+                      {t.accountId
+                        ? "Уже связан"
+                        : t.status === "verified_fixture"
+                          ? "Тест: доступен"
+                          : t.status === "ambiguous"
+                            ? "Ручная проверка"
+                            : "Не подтверждён"}
+                    </span>
                   </div>
-                  <span className="badge">
-                    {t.accountId
-                      ? "Уже связан"
-                      : t.status === "verified_fixture"
-                        ? "Тест: доступен"
-                        : t.status === "ambiguous"
-                          ? "Ручная проверка"
-                          : "Не подтверждён"}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </details>
             </Panel>
           )}
           {tab === "history" && (
@@ -284,7 +289,7 @@ export function AccountDetail({
                 ? "Счёт завершён. История сохранена."
                 : "Счёт остаётся открытым до подтверждения кассиром."}
             </p>
-            {tab !== "payments" && !done && (
+            {tab !== "payments" && !done && a.status === "awaiting_payment" && (
               <button
                 className="primary wide"
                 onClick={() => setTab("payments")}
@@ -306,7 +311,7 @@ function PaymentForm({ a }: { a: Account }) {
   const p2p = w.methods.find((m) => m.id === method)?.kind === "p2p";
   return (
     <form
-      className="form"
+      className="form payment-form"
       onSubmit={async (e) => {
         e.preventDefault();
         const d = new FormData(e.currentTarget);
@@ -323,18 +328,28 @@ function PaymentForm({ a }: { a: Account }) {
         );
       }}
     >
-      <label>
-        Способ оплаты
-        <select value={method} onChange={(e) => setMethod(e.target.value)}>
+      <div className="field">
+        <span>Способ оплаты</span>
+        <span
+          className="payment-methods"
+          role="group"
+          aria-label="Способ оплаты"
+        >
           {w.methods
             .filter((m) => m.enabled)
             .map((m) => (
-              <option key={m.id} value={m.id}>
+              <button
+                type="button"
+                key={m.id}
+                aria-pressed={method === m.id}
+                className={method === m.id ? "selected" : ""}
+                onClick={() => setMethod(m.id)}
+              >
                 {m.name}
-              </option>
+              </button>
             ))}
-        </select>
-      </label>
+        </span>
+      </div>
       <label>
         Сумма части, UZS
         <input
