@@ -19,6 +19,11 @@ jobs:
           --health-cmd "pg_isready -U club -d club_e2e"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      P2P_WEBHOOK_SECRET: synthetic-e2e-only-no-live-use
+      P2P_UZCARD_SENDER_IDS: '900001'
+      P2P_HUMO_SENDER_IDS: '900002'
+      P2P_UZCARD_BUSINESS_CONNECTION_ID: synthetic-business
+      P2P_HUMO_BUSINESS_CONNECTION_ID: synthetic-business
       DJANGO_SECRET_KEY: disposable-e2e-only-not-for-real-installations
       DJANGO_DEBUG: '1'
       POSTGRES_DB: club_e2e

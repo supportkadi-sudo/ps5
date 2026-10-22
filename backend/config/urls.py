@@ -1,3 +1,4 @@
+from apps.payments.ingress import BankNotificationView
 from django.urls import path
 from apps.api.auth import CsrfView, LoginView, LogoutView
 from apps.api.views import (
@@ -28,6 +29,7 @@ COMMAND_ROUTES = {
     "accounts/<str:id>/close": "CloseAccount",
     "accounts/<str:id>/lines": "AddLine",
     "accounts/<str:id>/remove-line": "RemoveLine",
+    "accounts/<str:id>/expect-transfer": "ExpectTransfer",
     "accounts/<str:id>/payments": "AcceptPayment",
     "shifts/open": "OpenShift",
     "shifts/<str:id>/close": "CloseShift",
@@ -40,6 +42,7 @@ COMMAND_ROUTES = {
     "settings/payment-methods": "SaveMethod",
 }
 urlpatterns = [
+    path("api/v1/integrations/telegram-business", BankNotificationView.as_view()),
     path("api/v1/commands/pending", PendingView.as_view()),
     path("health", health),
     path("ready", ready),

@@ -1,6 +1,6 @@
 # Архитектура CRM клуба
 
-Статус документа: целевая архитектура первой версии. Web/mock слой реализован; первый Django/PostgreSQL кассовый срез добавлен в `backend/`. Web ещё не подключён к нему; запуск и фактическая схема — `docs/BACKEND_STAGE.md`. Контракт и ограничения прототипа: `docs/API_CONTRACT.md`, `docs/WEB_STAGE.md`. Если решение меняется, обновить этот документ в том же PR, что и код.
+Статус документа: целевая архитектура и реализованный онлайн-MVP Django/PostgreSQL + React web. Mock — только отдельный demo-режим. Telegram Business ingress реализован для Uzcard/Humo; live-доставка пока не проверена. Запуск и ограничения: `docs/ONLINE_MVP.md`, `docs/P2P.md`; контракт: `docs/API_CONTRACT.md`. При изменении решения обновляйте этот документ в том же PR.
 
 ## 1. Архитектурное решение
 
@@ -158,3 +158,7 @@ Workspace ограничен рабочими subsets, полная истори
 ## Онлайн-MVP
 
 Web по умолчанию использует HttpApi, same-origin sessions/CSRF и Django/PostgreSQL. Финансовая pending-команда хранится в actor-scoped PostgreSQL слоте, не в browser storage. Ответ CommandResult → bounded workspace reload; полные журналы — keyset pages/detail; stock/shift totals — server aggregates. Offline mutations отложены. Подробности: docs/ONLINE_MVP.md.
+
+## Telegram Business P2P
+
+Владелец банковских событий — `payments`: `notifications` разбирает только строку ➕, masked card и Tashkent timestamp; `provenance` проверяет independent sender/connection и KADI v1 HMAC; `bridge` пересылает только новые business_message; `ingress` сохраняет нормализованный Transfer без записи Payment. `TransferExpectation` хранит текущую ожидаемую часть (метод/карта/сумма/окно); `matching` возвращает подсказки, а `services.accept` повторно проверяет единственное совпадение в общей финансовой транзакции. Существующие receipt/version/drawer/account/transfer locks и OneToOne связи сохраняются. Закрытие — прежняя отдельная команда. Transfer.amount стал exact Decimal(18,2), кассовые Payment остаются целыми UZS; тийины не округляются для приёма. Полные тексты/балансы не сохраняются. Онлайн-UI использует общий workspace и pending commands. Состояние конфигурации не означает проверенный live-канал. [Запуск/границы](docs/P2P.md).

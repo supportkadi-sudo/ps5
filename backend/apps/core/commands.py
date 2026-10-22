@@ -21,6 +21,7 @@ ACCOUNT_COMMANDS = {
     "AddLine",
     "RemoveLine",
     "AcceptPayment",
+    "ExpectTransfer",
 }
 
 

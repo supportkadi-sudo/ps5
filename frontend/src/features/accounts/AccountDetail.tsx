@@ -1,3 +1,4 @@
+import { P2PPanel } from "../payments/P2PPanel";
 import { ServerAudit } from "../reports/ServerHistory";
 import { isDemo } from "../../shared/api/client";
 import { useState } from "react";
@@ -224,32 +225,35 @@ export function AccountDetail({
                   Подтверждаю полную оплату · закрыть счёт
                 </button>
               )}
-              <details className="p2p-panel">
-                <summary>P2P уведомления · {w.transfers.length}</summary>
-                <p className="muted">
-                  P2P выключен. Доверенный источник Telegram Business не
-                  подключён.
-                </p>
-                {w.transfers.map((t) => (
-                  <div className="line" key={t.id}>
-                    <div>
-                      <strong>{money(t.amount)}</strong>
-                      <small>
-                        {t.source} · {date(t.receivedAt)}
-                      </small>
+              {!isDemo && <P2PPanel a={a} />}
+              {isDemo && (
+                <details className="p2p-panel">
+                  <summary>P2P уведомления · {w.transfers.length}</summary>
+                  <p className="muted">
+                    Демонстрационные уведомления. Реальный банковский источник
+                    здесь не используется.
+                  </p>
+                  {w.transfers.map((t) => (
+                    <div className="line" key={t.id}>
+                      <div>
+                        <strong>{money(t.amount)}</strong>
+                        <small>
+                          {t.source} · {date(t.receivedAt)}
+                        </small>
+                      </div>
+                      <span className="badge">
+                        {t.accountId
+                          ? "Уже связан"
+                          : t.status === "verified_fixture"
+                            ? "Тест: доступен"
+                            : t.status === "ambiguous"
+                              ? "Ручная проверка"
+                              : "Не подтверждён"}
+                      </span>
                     </div>
-                    <span className="badge">
-                      {t.accountId
-                        ? "Уже связан"
-                        : t.status === "verified_fixture"
-                          ? "Тест: доступен"
-                          : t.status === "ambiguous"
-                            ? "Ручная проверка"
-                            : "Не подтверждён"}
-                    </span>
-                  </div>
-                ))}
-              </details>
+                  ))}
+                </details>
+              )}
             </Panel>
           )}
           {tab === "history" && !isDemo && user.role !== "cashier" && (
@@ -343,7 +347,7 @@ export function AccountDetail({
 function PaymentForm({ a }: { a: Account }) {
   const { w, run } = useClub();
   const [method, setMethod] = useState(
-    w.methods.find((m) => m.enabled)?.id ?? "",
+    w.methods.find((m) => m.enabled && (isDemo || m.kind !== "p2p"))?.id ?? "",
   );
   const p2p = w.methods.find((m) => m.id === method)?.kind === "p2p";
   return (

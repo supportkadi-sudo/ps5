@@ -142,6 +142,7 @@ export class HttpApi implements ClubApi {
       CloseAccount: "/api/v1/accounts/{id}/close",
       AddLine: "/api/v1/accounts/{id}/lines",
       RemoveLine: "/api/v1/accounts/{id}/remove-line",
+      ExpectTransfer: "/api/v1/accounts/{id}/expect-transfer",
       AcceptPayment: "/api/v1/accounts/{id}/payments",
       OpenShift: "/api/v1/shifts/open",
       CloseShift: "/api/v1/shifts/{id}/close",

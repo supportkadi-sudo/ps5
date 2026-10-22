@@ -1,5 +1,5 @@
-export const money = (n: number) =>
-  new Intl.NumberFormat("ru-RU").format(n) + " сум";
+export const money = (n: number | string) =>
+  new Intl.NumberFormat("ru-RU").format(Number(n)) + " сум";
 export const date = (s: string) =>
   s
     ? new Date(s).toLocaleString("ru-RU", {

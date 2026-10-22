@@ -66,6 +66,16 @@ def change(actor, entity_id, operation, data):
         extra_before, extra_after = (
             add_line if operation == "AddLine" else remove_line
         )(account, data)
+    elif operation == "ExpectTransfer":
+        from apps.payments.matching import expect_transfer
+
+        extra_before = {
+            "expectedTransfer": snapshot(account.transfer_expectation)
+            if hasattr(account, "transfer_expectation")
+            else {}
+        }
+        expect_transfer(actor, shift, account, data, now)
+        extra_after = {"expectedTransfer": data}
     elif operation == "AcceptPayment":
         from apps.payments.services import accept
 

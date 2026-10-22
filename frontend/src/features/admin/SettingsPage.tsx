@@ -1,3 +1,4 @@
+import { P2PSources } from "../payments/P2PPanel";
 import { LiveEmployees, LiveReviews } from "./ServerAdministration";
 import { isDemo } from "../../shared/api/client";
 import { useState } from "react";
@@ -173,7 +174,8 @@ export function SettingsPage() {
               <div>
                 <b>{m.name}</b>
                 <small>
-                  {m.kind} · {m.enabled ? "Доступен" : "Отключён"}
+                  {m.kind} · {m.enabled ? "Доступен" : "Отключён"} {m.p2pSource}{" "}
+                  {m.cardLast4 ? "****" + m.cardLast4 : ""}
                 </small>
               </div>
               <button onClick={() => setEditing(m.id)}>Настроить</button>
@@ -200,6 +202,23 @@ export function SettingsPage() {
                   ],
                 },
                 {
+                  name: "p2pSource",
+                  label: "Источник P2P",
+                  value: method?.p2pSource ?? "",
+                  required: false,
+                  options: [
+                    { value: "", label: "Не задан" },
+                    { value: "uzcard", label: "Uzcard" },
+                    { value: "humo", label: "Humo" },
+                  ],
+                },
+                {
+                  name: "cardLast4",
+                  label: "Последние 4 цифры карты P2P",
+                  value: method?.cardLast4 ?? "",
+                  required: false,
+                },
+                {
                   name: "enabled",
                   label: "Статус",
                   value: String(method?.enabled ?? true),
@@ -215,6 +234,8 @@ export function SettingsPage() {
                     id: method?.id ?? (isDemo ? crypto.randomUUID() : ""),
                     name: d.name,
                     kind: d.kind as "cash" | "p2p" | "other",
+                    p2pSource: (d.p2pSource || "") as "" | "uzcard" | "humo",
+                    cardLast4: d.cardLast4 || "",
                     enabled: d.enabled === "true",
                   },
                 });
@@ -223,10 +244,7 @@ export function SettingsPage() {
               }}
             />
           )}
-          <p className="notice">
-            P2P-интеграция не подключена. Добавление способа оплаты не создаёт
-            банковский источник подтверждения.
-          </p>
+          <P2PSources />
         </Panel>
       )}
       {tab === "reviews" && !isDemo && <LiveReviews />}

@@ -21,6 +21,8 @@ class Product(Entity):
 
 
 class PaymentMethod(Entity):
+    p2p_source = models.CharField(max_length=10, blank=True)
+    card_last4 = models.CharField(max_length=4, blank=True)
     name = models.CharField(max_length=100)
     kind = models.CharField(
         max_length=10, choices=[(x, x) for x in ("cash", "p2p", "other")]

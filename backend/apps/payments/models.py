@@ -6,9 +6,11 @@ from apps.core.models import Entity, MAX_MONEY
 class Transfer(Entity):
     source = models.CharField(max_length=100)
     source_event_id = models.CharField(max_length=200)
-    amount = models.PositiveBigIntegerField()
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
     received_at = models.DateTimeField()
     status = models.CharField(max_length=20, default="unverified")
+    card_last4 = models.CharField(max_length=4, blank=True)
+    business_event_id = models.CharField(max_length=100, unique=True, null=True)
     evidence_reference = models.CharField(max_length=300, blank=True)
 
     class Meta:
@@ -97,3 +99,18 @@ class PaymentReversal(Entity):
                 name="payments_paymentreversal_amount_cap",
             ),
         ]
+
+
+class TransferExpectation(Entity):
+    consumed_at = models.DateTimeField(null=True)
+    account = models.OneToOneField(
+        "accounts.Account",
+        on_delete=models.PROTECT,
+        related_name="transfer_expectation",
+    )
+    method = models.ForeignKey("catalog.PaymentMethod", on_delete=models.PROTECT)
+    amount = models.PositiveBigIntegerField()
+    source = models.CharField(max_length=10)
+    card_last4 = models.CharField(max_length=4)
+    created_at = models.DateTimeField()
+    expires_at = models.DateTimeField()

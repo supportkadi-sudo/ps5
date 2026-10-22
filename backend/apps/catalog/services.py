@@ -47,7 +47,22 @@ def configure(actor, operation, data):
     # would make the UI misleading; disable and create a new method instead.
     if obj and model is PaymentMethod:
         require(obj.kind == values["kind"], "Create a new method to change kind")
+    if model is PaymentMethod:
+        source, last4 = values.get("p2pSource", ""), values.get("cardLast4", "")
+        require(
+            (not source and not last4)
+            or (
+                values["kind"] == "p2p"
+                and source in ("uzcard", "humo")
+                and len(last4) == 4
+                and last4.isascii()
+                and last4.isdigit()
+            ),
+            "P2P source and last four digits required together",
+        )
     attrs = {target: values[source] for source, target in fields.items()}
+    if model is PaymentMethod:
+        attrs.update(p2p_source=source, card_last4=last4)
     if model is Booth:
         BoothTariff = Tariff.objects.select_for_update().get(pk=attrs["tariff_id"])
         attrs["tariff_id"] = BoothTariff.pk

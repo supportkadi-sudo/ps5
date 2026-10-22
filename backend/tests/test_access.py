@@ -1,3 +1,4 @@
+from django.test import override_settings
 from rest_framework.test import APIClient
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import get_user_model
@@ -95,6 +96,12 @@ class AccessTests(CashierCase):
                 {"productId": str(self.product.pk), "quantity": 2, "unitCost": 1},
             )
 
+    @override_settings(
+        P2P_WEBHOOK_SECRET="synthetic-tests-only",
+        P2P_SOURCES={
+            "uzcard": {"sender_ids": [900001], "connection_id": "synthetic-business"}
+        },
+    )
     def test_p2p_unverified_fixture_ambiguous_rejected_and_single_link(self):
         self.shift()
         a = self.account()
@@ -126,6 +133,23 @@ class AccessTests(CashierCase):
         # Verified source is seeded ONLY by test; public ingress cannot assert it.
         t.status = "verified_source"
         t.evidence_reference = "trusted-test-reference"
+        t.save()
+        # Trust alone is insufficient: no card/expected part => manual review.
+        with self.assertRaises(Conflict):
+            self.command("AcceptPayment", body, a)
+        self.p2p.p2p_source, self.p2p.card_last4 = "uzcard", "9522"
+        self.p2p.save()
+        self.command(
+            "ExpectTransfer",
+            {"expectedVersion": 3, "methodId": str(self.p2p.pk), "amount": 10000},
+            a,
+        )
+        body["expectedVersion"] = 4
+        t.source, t.card_last4, t.business_event_id = (
+            "uzcard",
+            "9522",
+            "synthetic-business-event",
+        )
         t.save()
         self.command("AcceptPayment", body, a)
         self.assertEqual(Payment.objects.count(), 1)
