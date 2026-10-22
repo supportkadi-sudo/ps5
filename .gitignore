@@ -1,4 +1,38 @@
+# Environment and secrets
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python / Django
 __pycache__/
 *.py[cod]
+*.sqlite3
 .venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+staticfiles/
+media/
+
+# Node / web / mobile
+node_modules/
+dist/
+build/
+.expo/
+.expo-shared/
+coverage/
+*.tsbuildinfo
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local data / backups
+*.dump
+*.sql.gz
+backups/
