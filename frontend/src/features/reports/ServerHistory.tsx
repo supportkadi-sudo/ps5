@@ -71,7 +71,6 @@ export function ServerAudit({ entityId = "" }: { entityId?: string }) {
   );
 }
 export function ServerAccounts() {
-  const { w } = useClub();
   const { data, error, busy, next, first } = useServerPage(
     "/api/v1/accounts",
     "AccountPage",
@@ -123,7 +122,7 @@ export function ServerAccounts() {
       </button>
       {account && (
         <AccountDetail
-          account={w.accounts.find((a) => a.id === account.id) ?? account}
+          account={account}
           onBack={() => setAccount(null)}
         />
       )}
