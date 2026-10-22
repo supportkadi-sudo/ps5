@@ -36,8 +36,9 @@ function useAdminRequest() {
         },
         "CommandResult",
       );
-      pending.current = null;
       await refresh();
+      // Keep the original key/body if refresh fails after the POST committed.
+      pending.current = null;
       return true;
     } catch (e) {
       if (e instanceof CommandRejected) pending.current = null;
