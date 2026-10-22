@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from apps.core.rules import Conflict
 from apps.payments.models import Transfer, Payment
+from apps.access.models import LoginBucket
 from apps.api.read_models import workspace
 from apps.api.contract import validate
 from .base import CashierCase
@@ -60,6 +61,32 @@ class AccessTests(CashierCase):
             204,
         )
         self.assertEqual(c.get("/api/v1/workspace").status_code, 403)
+
+    @override_settings(LOGIN_RATE_LIMIT=1, LOGIN_RATE_WINDOW_SECONDS=300)
+    def test_login_rate_limit_uses_forwarded_client_ip(self):
+        LoginBucket.objects.all().delete()
+        c = APIClient()
+        first = c.post(
+            "/api/v1/auth/login",
+            {"username": "missing-user-a", "password": "wrong"},
+            format="json",
+            HTTP_X_REAL_IP="198.51.100.21",
+        )
+        second = c.post(
+            "/api/v1/auth/login",
+            {"username": "missing-user-b", "password": "wrong"},
+            format="json",
+            HTTP_X_REAL_IP="198.51.100.22",
+        )
+        same_ip = c.post(
+            "/api/v1/auth/login",
+            {"username": "missing-user-c", "password": "wrong"},
+            format="json",
+            HTTP_X_REAL_IP="198.51.100.21",
+        )
+        self.assertEqual(first.status_code, 401, first.content)
+        self.assertEqual(second.status_code, 401, second.content)
+        self.assertEqual(same_ip.status_code, 429, same_ip.content)
 
     def test_cashier_cannot_manage_or_read_costs_or_other_shift(self):
         with self.assertRaises(PermissionDenied):
