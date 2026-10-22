@@ -4,6 +4,13 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+def quarantine_zero_transfers(apps, schema_editor):
+    # Keep source identity/evidence for deduplication; never invent monetary value.
+    apps.get_model("payments", "Transfer").objects.filter(amount=0).update(
+        status="ambiguous"
+    )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("accounts", "0002_account_acct_hist_idx_account_acct_shift_hist_idx_and_more"),
@@ -52,11 +59,13 @@ class Migration(migrations.Migration):
                 name="payments_paymentreversal_amount_cap",
             ),
         ),
+        migrations.RunPython(quarantine_zero_transfers, migrations.RunPython.noop),
         migrations.AddConstraint(
             model_name="transfer",
             constraint=models.CheckConstraint(
                 condition=models.Q(
-                    ("amount__lte", 9007199254740991), ("amount__gt", 0)
+                    ("amount__lte", 9007199254740991),
+                    models.Q(amount__gt=0) | models.Q(amount=0, status="ambiguous"),
                 ),
                 name="payments_transfer_amount_cap",
             ),

@@ -17,7 +17,8 @@ class Transfer(Entity):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(amount__lte=MAX_MONEY) & models.Q(amount__gt=0),
+                condition=models.Q(amount__lte=MAX_MONEY)
+                & (models.Q(amount__gt=0) | models.Q(amount=0, status="ambiguous")),
                 name="payments_transfer_amount_cap",
             ),
             models.UniqueConstraint(

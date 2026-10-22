@@ -12,6 +12,14 @@ def save_review(actor, data):
         URLValidator(schemes=["https"])(values["url"])
     except URLValidationError:
         raise ValidationError("Review link must be an absolute HTTPS URL")
+    import qrcode
+
+    try:
+        qr = qrcode.QRCode()
+        qr.add_data(values["url"])
+        qr.make(fit=True)
+    except (qrcode.exceptions.DataOverflowError, ValueError):
+        raise ValidationError("Review URL exceeds QR byte capacity")
     obj = (
         ReviewLink.objects.select_for_update().get(pk=values["id"])
         if values["id"]
