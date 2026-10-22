@@ -2069,7 +2069,9 @@ export interface operations {
     Logout: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-CSRFToken": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2141,6 +2143,7 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": string;
+                "X-CSRFToken": string;
             };
             path: {
                 id: string;

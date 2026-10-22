@@ -7,7 +7,7 @@ from apps.shifts.services import expected
 from apps.club.models import Booth, Tariff
 from apps.catalog.models import Product, PaymentMethod
 from apps.inventory.models import Batch
-from apps.payments.models import Transfer
+from apps.payments.selectors import visible_transfers
 from apps.audit.models import AuditEvent
 from apps.reports.services import report
 
@@ -158,7 +158,7 @@ def workspace(actor):
         for product in products:
             product["defaultCost"] = 0
     transfers = []
-    for transfer in Transfer.objects.all().order_by("received_at", "id"):
+    for transfer in visible_transfers(actor, now):
         row = rows(
             [transfer],
             dict(

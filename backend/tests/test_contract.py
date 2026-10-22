@@ -31,3 +31,10 @@ class ContractTests(SimpleTestCase):
                     ]
                 ),
             )
+
+    def test_every_session_post_declares_csrf(self):
+        for path, methods in CONTRACT["paths"].items():
+            op = methods.get("post")
+            if op and op.get("x-backend-implemented"):
+                headers = {p["name"]: p for p in op.get("parameters", [])}
+                self.assertTrue(headers.get("X-CSRFToken", {}).get("required"), path)
