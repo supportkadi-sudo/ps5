@@ -1779,15 +1779,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/CommandResult"
-                    },
-                    {
-                      "$ref": "#/components/schemas/Workspace"
-                    }
-                  ],
-                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
+                  "$ref": "#/components/schemas/CommandResult"
                 }
               }
             }
@@ -1843,7 +1835,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveReview"
+                "$ref": "#/components/schemas/SaveReviewLink"
               }
             }
           }
@@ -1867,7 +1859,28 @@
             }
           }
         ],
-        "x-backend-implemented": false
+        "x-backend-implemented": true
+      },
+      "get": {
+        "operationId": "ListReviewLinks",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewList"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/access/users": {
@@ -1879,15 +1892,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/CommandResult"
-                    },
-                    {
-                      "$ref": "#/components/schemas/Workspace"
-                    }
-                  ],
-                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
+                  "$ref": "#/components/schemas/CommandResult"
                 }
               }
             }
@@ -1943,7 +1948,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveUser"
+                "$ref": "#/components/schemas/SaveEmployee"
               }
             }
           }
@@ -1967,7 +1972,28 @@
             }
           }
         ],
-        "x-backend-implemented": false
+        "x-backend-implemented": true
+      },
+      "get": {
+        "operationId": "ListEmployees",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeList"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/workspace": {
@@ -2059,6 +2085,23 @@
           },
           "401": {
             "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Login failure rate limit, Retry-After header",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2278,6 +2321,232 @@
           }
         }
       }
+    },
+    "/api/v1/access/users/{id}/password": {
+      "post": {
+        "operationId": "ResetPassword",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPassword"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-backend-implemented": true
+      }
+    },
+    "/api/v1/auth/password": {
+      "post": {
+        "operationId": "ChangePassword",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePassword"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-backend-implemented": true
+      }
+    },
+    "/api/v1/settings/review-links/{id}/qr": {
+      "get": {
+        "operationId": "GetReviewQr",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -2300,6 +2569,17 @@
               "manager",
               "cashier"
             ]
+          },
+          "username": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -2895,6 +3175,14 @@
           "url": {
             "type": "string",
             "format": "uri"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -3616,6 +3904,258 @@
           "expectedVersion",
           "reason",
           "restockGoods"
+        ]
+      },
+      "EmployeeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "manager",
+              "cashier"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "isActive"
+        ]
+      },
+      "SaveEmployee": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/EmployeeInput"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "user",
+          "expectedVersion",
+          "reason"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "user": {
+                  "properties": {
+                    "id": {
+                      "const": ""
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              },
+              "required": [
+                "user"
+              ]
+            },
+            "then": {
+              "required": [
+                "username",
+                "password"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "username"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "password"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ResetPassword": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "reason",
+          "password"
+        ]
+      },
+      "ChangePassword": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "oldPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "reason",
+          "oldPassword",
+          "newPassword"
+        ]
+      },
+      "ReviewInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1000,
+            "format": "uri"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "url",
+          "enabled"
+        ]
+      },
+      "SaveReviewLink": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "review": {
+            "$ref": "#/components/schemas/ReviewInput"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "review",
+          "expectedVersion",
+          "reason"
+        ]
+      },
+      "EmployeeList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReviewList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewLink"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     },

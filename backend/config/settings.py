@@ -78,3 +78,20 @@ CSRF_TRUSTED_ORIGINS = (
 SECURE_CONTENT_TYPE_NOSNIFF = True
 APPEND_SLASH = False
 CSRF_FAILURE_VIEW = "apps.api.errors.csrf_failure"
+
+LOGIN_RATE_LIMIT = int(os.getenv("LOGIN_RATE_LIMIT", "5"))
+LOGIN_RATE_WINDOW_SECONDS = int(os.getenv("LOGIN_RATE_WINDOW_SECONDS", "300"))
+COMMAND_HASH_KEY = os.getenv("COMMAND_HASH_KEY", SECRET_KEY)
+if not DEBUG and (len(SECRET_KEY) < 32 or SECRET_KEY.startswith("replace-with")):
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "Production requires a random DJANGO_SECRET_KEY of at least 32 characters"
+    )
+if not DEBUG and ("*" in ALLOWED_HOSTS or not all(ALLOWED_HOSTS)):
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("Production requires explicit ALLOWED_HOSTS")
+if LOGIN_RATE_LIMIT < 1 or LOGIN_RATE_WINDOW_SECONDS < 1:
+    raise ValueError("Login rate limits must be positive")
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "0") == "1"

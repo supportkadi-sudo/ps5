@@ -24,5 +24,18 @@ class Command(BaseCommand):
         except ValidationError as exc:
             raise CommandError("; ".join(exc.messages))
         user.set_password(password)
-        user.save()
+        from django.db import transaction
+        from apps.access.services import user_dto
+        from apps.core.rules import audit
+
+        with transaction.atomic():
+            user.save()
+            audit(
+                user,
+                user,
+                "BootstrapEmployee",
+                {},
+                "Trusted operator CLI provisioning",
+                after=user_dto(user),
+            )
         self.stdout.write(self.style.SUCCESS("Employee created"))

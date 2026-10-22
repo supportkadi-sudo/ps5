@@ -19,9 +19,19 @@ class ContractTests(SimpleTestCase):
                 ("/api/v1/" + route.replace("<str:id>", "{id}"), "post"),
             )
             request = CONTRACT["paths"][operations[command][0]]["post"]["requestBody"]
+            expected_schema = {
+                "SaveUser": "SaveEmployee",
+                "SaveReview": "SaveReviewLink",
+            }.get(command, command)
             self.assertEqual(
                 request["content"]["application/json"]["schema"]["$ref"],
-                "#/components/schemas/" + command,
+                "#/components/schemas/" + expected_schema,
+            )
+            self.assertIn(
+                request["content"]["application/json"]["schema"]["$ref"].rsplit("/", 1)[
+                    1
+                ],
+                CONTRACT["components"]["schemas"],
             )
             self.assertIn(
                 "CommandResult",

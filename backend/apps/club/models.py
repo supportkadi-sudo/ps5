@@ -19,3 +19,10 @@ class Booth(Entity):
     console = models.CharField(max_length=50)
     tariff = models.ForeignKey(Tariff, on_delete=models.PROTECT)
     enabled = models.BooleanField(default=True)
+
+
+class ReviewLink(Entity):
+    name = models.CharField(max_length=150)
+    url = models.URLField(max_length=1000)
+    enabled = models.BooleanField(default=True)
+    version = models.PositiveBigIntegerField(default=1)

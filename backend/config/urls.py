@@ -9,7 +9,13 @@ from apps.api.views import (
     ready,
 )
 
+from apps.api.administration import EmployeeView, ReviewView, ReviewQrView
+
 COMMAND_ROUTES = {
+    "access/users": "SaveUser",
+    "access/users/<str:id>/password": "ResetPassword",
+    "auth/password": "ChangePassword",
+    "settings/review-links": "SaveReview",
     "accounts": "CreateAccount",
     "accounts/<str:id>/refund": "RefundAccount",
     "accounts/<str:id>/start": "StartTimer",
@@ -38,6 +44,9 @@ urlpatterns = [
     path("api/v1/workspace", WorkspaceView.as_view()),
     path("api/v1/reports", ReportView.as_view()),
     path("api/v1/schema", SchemaView.as_view()),
+    path("api/v1/access/users", EmployeeView.as_view()),
+    path("api/v1/settings/review-links", ReviewView.as_view()),
+    path("api/v1/settings/review-links/<str:id>/qr", ReviewQrView.as_view()),
     *[
         path("api/v1/" + route, CommandView.as_view(operation=operation))
         for route, operation in COMMAND_ROUTES.items()
