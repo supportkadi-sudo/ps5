@@ -1,3 +1,4 @@
+import ipaddress
 from django.contrib.auth import authenticate, login, logout
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -9,6 +10,15 @@ from rest_framework.exceptions import AuthenticationFailed
 from apps.api.contract import validate
 from apps.access.rate_limit import reserve, release_success
 from apps.access.services import user_dto
+
+
+def client_address(request):
+    # nginx overwrites X-Real-IP before proxying to the private API service.
+    forwarded = request.META.get("HTTP_X_REAL_IP", "").strip()
+    try:
+        return str(ipaddress.ip_address(forwarded))
+    except ValueError:
+        return request.META.get("REMOTE_ADDR", "unknown")
 
 
 class CsrfView(APIView):
@@ -26,7 +36,7 @@ class LoginView(APIView):
     def post(self, request):
         validate("LoginRequest", request.data)
         tokens = reserve(
-            request.data["username"], request.META.get("REMOTE_ADDR", "unknown")
+            request.data["username"], client_address(request)
         )
         user = authenticate(request, **request.data)
         if user is None:

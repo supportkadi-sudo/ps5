@@ -12,6 +12,7 @@ export const commandNames = [
   "AddLine",
   "RemoveLine",
   "AcceptPayment",
+  "ExpectTransfer",
   "OpenShift",
   "CloseShift",
   "AddExpense",

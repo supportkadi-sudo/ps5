@@ -27,5 +27,27 @@ services:
       interval: 10s
       timeout: 4s
       retries: 5
+  p2p-bridge:
+    profiles: [p2p]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      P2P_BACKEND_URL: http://api:8000
+    command: [python, manage.py, run_p2p_bridge]
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
 volumes:
   postgres_data:

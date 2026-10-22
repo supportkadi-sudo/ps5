@@ -1,4 +1,4 @@
-"""Notification ingress boundary; deliberately no live Telegram or verification adapter."""
+"""Legacy unverified boundary. Authenticated Business ingress lives in ingress.py."""
 
 from django.db import transaction
 from datetime import datetime

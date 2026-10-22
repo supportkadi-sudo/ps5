@@ -19,6 +19,7 @@ from apps.audit.models import AuditEvent
 from apps.core.rules import management, money
 from apps.inventory.models import Batch
 from apps.payments.selectors import visible_transfers
+from apps.payments.matching import transfer_dto
 
 EXPENSE_FIELDS = dict(
     id="id",
@@ -73,17 +74,6 @@ def refund_row(refund):
             )
             for r in reversals
         ],
-    )
-
-
-def transfer_row(t):
-    return dict(
-        id=str(t.pk),
-        amount=t.amount,
-        receivedAt=t.received_at.isoformat(),
-        source=t.source,
-        status=t.status,
-        accountId=str(t.payment.account_id) if hasattr(t, "payment") else "",
     )
 
 
@@ -156,7 +146,7 @@ class HistoryView(CommandView):
                 qs, field, project, allowed = (
                     visible_transfers(actor, now),
                     "received_at",
-                    transfer_row,
+                    lambda t: transfer_dto(t, actor, now),
                     {},
                 )
             else:

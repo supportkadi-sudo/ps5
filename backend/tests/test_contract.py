@@ -46,5 +46,12 @@ class ContractTests(SimpleTestCase):
         for path, methods in CONTRACT["paths"].items():
             op = methods.get("post")
             if op and op.get("x-backend-implemented"):
+                if op.get("security") == [{"BankHmac": []}]:
+                    self.assertEqual(path, "/api/v1/integrations/telegram-business")
+                    self.assertEqual(
+                        {p["name"] for p in op["parameters"] if p["required"]},
+                        {"X-P2P-Signature", "X-P2P-Timestamp"},
+                    )
+                    continue
                 headers = {p["name"]: p for p in op.get("parameters", [])}
                 self.assertTrue(headers.get("X-CSRFToken", {}).get("required"), path)

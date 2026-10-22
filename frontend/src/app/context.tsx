@@ -6,9 +6,11 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { RemotePendingCommands } from "../shared/api/remote-pending";
+import { HttpApi } from "../shared/api/http";
 import { PendingCommands, type PendingCommand } from "../shared/api/pending";
 import { CommandRejected } from "../shared/api/errors";
-import { api } from "../shared/api/client";
+import { api, isDemo } from "../shared/api/client";
 import type {
   User,
   Workspace,
@@ -27,6 +29,7 @@ type State = {
   run: Run;
   busy: boolean;
   online: boolean;
+  refresh: () => Promise<void>;
   logout: () => void;
   pending: PendingCommand | null;
   retry: () => Promise<boolean>;
@@ -86,17 +89,22 @@ export function ClubProvider({
       clearInterval(timer);
     };
   }, []);
-  const pendingStore = useRef(new PendingCommands(() => localStorage, user.id));
+  const pendingStore = useRef(
+    isDemo
+      ? new PendingCommands(() => localStorage, user.id)
+      : new RemotePendingCommands(api as HttpApi, user.id),
+  );
   const [pending, setPending] = useState<PendingCommand | null>(null);
-  const refreshPending = () => setPending(pendingStore.current.read());
+  const refreshPending = async () =>
+    setPending(await pendingStore.current.read());
   useEffect(() => {
     try {
-      refreshPending();
+      void refreshPending().catch((e) => setError(String(e.message)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сохранённой команды");
     }
   }, []);
-  const execute = async (getCommand: () => Command) => {
+  const execute = async (getCommand: () => Command | Promise<Command>) => {
     if (commandLock.current) return false;
     if (!navigator.onLine) {
       setError(
@@ -109,15 +117,15 @@ export function ClubProvider({
     setBusy(true);
     setError("");
     try {
-      const command = getCommand();
-      refreshPending();
+      const command = await getCommand();
+      await refreshPending();
       try {
         const result = await api.execute(command);
-        pendingStore.current.complete(command.key);
+        await pendingStore.current.complete(command.key);
         setW(result);
       } catch (e) {
         if (e instanceof CommandRejected)
-          pendingStore.current.complete(command.key);
+          await pendingStore.current.complete(command.key);
         throw e;
       }
       return true;
@@ -126,7 +134,7 @@ export function ClubProvider({
       return false;
     } finally {
       try {
-        refreshPending();
+        await refreshPending();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Ошибка сохранения команды");
       }
@@ -137,8 +145,8 @@ export function ClubProvider({
   const run: Run = (name, data, entityId) =>
     execute(() => pendingStore.current.prepare(name, data, entityId));
   const retry = () =>
-    execute(() => {
-      const p = pendingStore.current.read();
+    execute(async () => {
+      const p = await pendingStore.current.read();
       if (!p) throw Error("Команда отсутствует");
       return p.command;
     });
@@ -160,6 +168,9 @@ export function ClubProvider({
             run,
             busy,
             online,
+            refresh: async () => {
+              setW(await api.load());
+            },
             logout,
             pending,
             retry,

@@ -80,6 +80,19 @@ def account_row(a, actor, now):
         if not privileged:
             item["cost"] = 0
         row["lines"].append(item)
+    if (
+        a.status == "awaiting_payment"
+        and hasattr(a, "transfer_expectation")
+        and a.transfer_expectation.consumed_at is None
+    ):
+        e = a.transfer_expectation
+        row["expectedTransfer"] = dict(
+            amount=e.amount,
+            source=e.source,
+            cardLast4=e.card_last4,
+            methodId=str(e.method_id),
+            expiresAt=e.expires_at.isoformat(),
+        )
     row["payments"] = rows(
         a.payments.all().order_by("created_at", "id"), PAYMENT_FIELDS
     )

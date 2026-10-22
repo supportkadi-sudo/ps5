@@ -1,3 +1,4 @@
+import { ServerAccounts, ServerAudit } from "../features/reports/ServerHistory";
 import { useState } from "react";
 import {
   Gamepad2,
@@ -14,7 +15,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { ClubProvider, useClub } from "./context";
-import { api } from "../shared/api/client";
+import { api, isDemo } from "../shared/api/client";
 import type { User } from "../shared/api/types";
 import { Cashier } from "../pages/Cashier";
 import { ShiftPage } from "../features/shifts/ShiftPage";
@@ -28,8 +29,10 @@ export function App() {
     <ClubProvider
       user={user}
       logout={() => {
-        void api.logout();
-        setUser(null);
+        void api
+          .logout()
+          .then(() => setUser(null))
+          .catch((e) => window.alert("Выход не подтверждён: " + e.message));
       }}
     >
       <Shell />
@@ -87,18 +90,23 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
         >
           <label>
             Сотрудник
-            <select name="username">
-              <option value="owner">Тимур · владелец</option>
-              <option value="cashier">Азиз · кассир</option>
-              <option value="manager">Управляющий</option>
-            </select>
+            {isDemo ? (
+              <select name="username">
+                <option value="owner">Тимур · владелец</option>
+                <option value="cashier">Азиз · кассир</option>
+                <option value="manager">Управляющий</option>
+              </select>
+            ) : (
+              <input name="username" autoComplete="username" required />
+            )}
           </label>
           <label>
             Пароль
             <input
               name="password"
               type="password"
-              defaultValue="demo"
+              defaultValue={isDemo ? "demo" : ""}
+              autoComplete="current-password"
               required
             />
           </label>
@@ -112,8 +120,9 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
           </button>
         </form>
         <p className="notice">
-          ДЕМО · пароль demo. Все операции тестовые, данные сохраняются только в
-          этом браузере. Реальные оплаты не принимаются.
+          {isDemo
+            ? "ДЕМО · пароль demo. Данные только в браузере."
+            : "Онлайн · персональный вход. P2P выключен: доверенный источник не подключён."}
         </p>
       </section>
     </main>
@@ -131,6 +140,9 @@ function Shell() {
       ? [
           { id: "catalog", label: "Каталог и склад", icon: Package },
           { id: "reports", label: "Отчёты", icon: ChartNoAxesCombined },
+          ...(!isDemo
+            ? [{ id: "history", label: "История счетов", icon: ScrollText }]
+            : []),
           { id: "audit", label: "Журнал аудита", icon: ScrollText },
           { id: "settings", label: "Настройки", icon: Settings },
         ]
@@ -202,7 +214,9 @@ function Shell() {
             Рабочее пространство{" "}
             <b>/ {nav.find((n) => n.id === page)?.label}</b>
           </span>
-          <span className="demo-chip">ДЕМО · mock API</span>
+          <span className="demo-chip">
+            {isDemo ? "ДЕМО · mock API" : "Онлайн · Django / PostgreSQL"}
+          </span>
         </header>
         <div
           className={"connection " + (!online ? "offline" : "")}
@@ -210,8 +224,10 @@ function Shell() {
         >
           {online ? (
             <>
-              <span className="green-dot" /> Локальная демоверсия · сервер не
-              подключён
+              <span className="green-dot" />{" "}
+              {isDemo
+                ? "Локальная демоверсия · сервер не подключён"
+                : "Онлайн · серверные данные"}
             </>
           ) : (
             <>
@@ -239,8 +255,14 @@ function Shell() {
             <CatalogPage />
           ) : manager && page === "reports" ? (
             <ReportsPage />
+          ) : manager && page === "history" && !isDemo ? (
+            <ServerAccounts />
           ) : manager && page === "audit" ? (
-            <AuditPage />
+            isDemo ? (
+              <AuditPage />
+            ) : (
+              <ServerAudit />
+            )
           ) : manager && page === "settings" ? (
             <SettingsPage />
           ) : null}

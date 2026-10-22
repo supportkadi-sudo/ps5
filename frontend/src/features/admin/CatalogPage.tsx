@@ -1,3 +1,5 @@
+import { ServerBatches } from "../reports/ServerHistory";
+import { isDemo } from "../../shared/api/client";
 import { useState } from "react";
 import { useClub } from "../../app/context";
 import { Form, Panel } from "../../shared/ui/Form";
@@ -45,9 +47,11 @@ export function CatalogPage() {
                     </small>
                   </td>
                   <td data-label="Остаток">
-                    {w.batches
-                      .filter((b) => b.productId === p.id)
-                      .reduce((n, b) => n + b.remaining, 0)}
+                    {!isDemo
+                      ? (p.availableStock ?? 0)
+                      : w.batches
+                          .filter((b) => b.productId === p.id)
+                          .reduce((n, b) => n + b.remaining, 0)}
                   </td>
                   <td data-label="Цена продажи">{money(p.salePrice)}</td>
                   <td data-label="Себестоимость">{money(p.defaultCost)}</td>
@@ -119,7 +123,7 @@ export function CatalogPage() {
           submit={async (d) => {
             const ok = await run("SaveProduct", {
               product: {
-                id: p?.id ?? crypto.randomUUID(),
+                id: p?.id ?? (isDemo ? crypto.randomUUID() : ""),
                 name: d.name,
                 category: d.category,
                 salePrice: Number(d.salePrice),
@@ -169,7 +173,8 @@ export function CatalogPage() {
           </p>
         </Panel>
       </div>
-      <Panel title="Партии и остатки">
+      {!isDemo && <ServerBatches />}
+      <Panel title="Последние партии и остатки">
         {w.batches.map((b) => (
           <div className="line" key={b.id}>
             <div>

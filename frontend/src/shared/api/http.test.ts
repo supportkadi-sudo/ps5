@@ -21,9 +21,19 @@ it("rejects a malformed successful workspace response", async () => {
   await expect(new HttpApi().load()).rejects.toThrow("Некорректные данные");
 });
 it("sends the same command key and encoded entity id when retrying", async () => {
+  const workspace = seed();
+  workspace.users = [workspace.users.find((u) => u.role === "cashier")!];
   const fetch = vi
     .fn()
-    .mockImplementation(() => Promise.resolve(Response.json(seed())));
+    .mockImplementation((path: string, init?: RequestInit) =>
+      Promise.resolve(
+        Response.json(
+          init?.method === "POST"
+            ? { entityId: "one/two", operation: "Precheck", version: 2 }
+            : workspace,
+        ),
+      ),
+    );
   vi.stubGlobal("fetch", fetch);
   const api = new HttpApi(),
     key = crypto.randomUUID(),
@@ -37,7 +47,7 @@ it("sends the same command key and encoded entity id when retrying", async () =>
   await api.execute(c);
   expect(fetch.mock.calls[0][0]).toBe("/api/v1/accounts/one%2Ftwo/precheck");
   expect(fetch.mock.calls[0][1].headers["Idempotency-Key"]).toBe(key);
-  expect(fetch.mock.calls[1][1].headers["Idempotency-Key"]).toBe(key);
+  expect(fetch.mock.calls[2][1].headers["Idempotency-Key"]).toBe(key);
 });
 it("keeps conflicts, gateway errors and malformed acknowledgements ambiguous", async () => {
   const { CommandRejected } = await import("./errors");

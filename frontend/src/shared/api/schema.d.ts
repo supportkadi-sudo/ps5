@@ -612,6 +612,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPendingCommand"];
+        put?: never;
+        post: operations["StagePendingCommand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/expect-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ожидать часть перевода на выбранную карту без записи оплаты */
+        post: operations["ExpectTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/telegram-business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authenticated bank bridge event; never creates payment or closes account */
+        post: operations["IngestBankNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -704,6 +754,14 @@ export interface components {
             paid: number;
             due: number;
             refund?: components["schemas"]["Refund"];
+            expectedTransfer?: {
+                amount: number;
+                /** @enum {string} */
+                source: "uzcard" | "humo";
+                cardLast4: string;
+                methodId: string;
+                expiresAt: string;
+            };
         };
         PaymentMethod: {
             id: string;
@@ -711,15 +769,23 @@ export interface components {
             /** @enum {string} */
             kind: "cash" | "p2p" | "other";
             enabled: boolean;
+            /** @enum {string} */
+            p2pSource?: "" | "uzcard" | "humo";
+            cardLast4?: string;
         };
         Transfer: {
             id: string;
-            amount: number;
+            amount: number | string;
             receivedAt: string;
             source: string;
             /** @enum {string} */
             status: "verified_fixture" | "unverified" | "ambiguous" | "verified_source";
             accountId: string;
+            cardLast4?: string;
+            /** @enum {string} */
+            processingStatus?: "found" | "unmatched" | "manual_review" | "accepted";
+            candidateAccountId?: string;
+            candidateMethodId?: string;
         };
         Shift: {
             id: string;
@@ -800,6 +866,7 @@ export interface components {
             audit: components["schemas"]["AuditEvent"][];
             reviews: components["schemas"]["ReviewLink"][];
             report: components["schemas"]["Report"];
+            p2pSources?: components["schemas"]["P2PSource"][];
         };
         LoginRequest: {
             username: string;
@@ -1019,6 +1086,44 @@ export interface components {
         ShiftPage: {
             items: components["schemas"]["Shift"][];
             nextCursor: string | null;
+        };
+        PendingCommand: {
+            name: string;
+            key: string;
+            entityId?: string;
+            data: Record<string, never>;
+        };
+        PendingState: {
+            pending: null | {
+                actorId: string;
+                command: components["schemas"]["PendingCommand"];
+            };
+        };
+        P2PSource: {
+            /** @enum {string} */
+            source: "uzcard" | "humo";
+            configured: boolean;
+        };
+        ExpectTransfer: {
+            methodId: string;
+            amount: number;
+            expectedVersion: number;
+        };
+        BankNotification: {
+            /** @enum {string} */
+            source: "uzcard" | "humo";
+            senderId: number;
+            /** @constant */
+            senderIsBot: true;
+            businessConnectionId: string;
+            chatId: number;
+            messageId: number;
+            text: string;
+        };
+        BankAcknowledgement: {
+            eventId: string;
+            /** @constant */
+            evidenceStatus: "verified_source";
         };
     };
     responses: never;
@@ -2914,6 +3019,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShiftPage"];
+                };
+            };
+        };
+    };
+    GetPendingCommand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Actor-scoped durable retry slot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingState"];
+                };
+            };
+        };
+    };
+    StagePendingCommand: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRFToken": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    command: components["schemas"]["PendingCommand"];
+                } | {
+                    completeKey: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Staged or cleared; does not execute command */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpectTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "X-CSRFToken": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpectTransfer"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResult"] | components["schemas"]["Workspace"];
+                };
+            };
+            /** @description Success */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Success */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflict: retain original key and reconcile; key is unique per actor across endpoints. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    IngestBankNotification: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-P2P-Signature": string;
+                "X-P2P-Timestamp": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankNotification"];
+            };
+        };
+        responses: {
+            /** @description Persisted bank evidence only */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAcknowledgement"];
+                };
+            };
+            /** @description Unsupported message */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid signature or source */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Changed event payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

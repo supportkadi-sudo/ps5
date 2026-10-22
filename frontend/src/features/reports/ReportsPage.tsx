@@ -185,7 +185,7 @@ export function ReportsPage() {
               }
             />
           </Panel>
-          <Panel title="Закрытые счета">
+          <Panel title="Последние закрытые счета рабочего места">
             {closed.map((a) => (
               <div className="line" key={a.id}>
                 <span>

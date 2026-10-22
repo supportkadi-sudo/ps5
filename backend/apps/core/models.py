@@ -26,3 +26,8 @@ class CommandReceipt(Entity):
                 fields=["actor", "key"], name="unique_actor_command"
             )
         ]
+
+
+class PendingCommand(models.Model):
+    actor = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    command = models.JSONField()

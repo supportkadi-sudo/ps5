@@ -21,6 +21,19 @@ def accept(actor, shift, account, data, now):
             transfer.status == "verified_source" and transfer.evidence_reference,
             "Transfer is not verified by a trusted source",
         )
+        from apps.payments.matching import match_transfer
+        from apps.payments.provenance import connected
+
+        status, candidates = match_transfer(transfer, now)
+        require(
+            status == "found" and len(candidates) == 1 and connected(transfer.source),
+            "Transfer requires manual review",
+        )
+        candidate = candidates[0]
+        require(
+            candidate.account_id == account.pk and candidate.method_id == method.pk,
+            "Transfer does not match this account/method",
+        )
         require(
             transfer.amount == data["amount"]
             and not Payment.objects.filter(transfer=transfer).exists(),
@@ -38,5 +51,8 @@ def accept(actor, shift, account, data, now):
         transfer=transfer,
         created_at=now,
     )
+    if transfer:
+        candidate.consumed_at = now
+        candidate.save(update_fields=["consumed_at"])
     expected(shift)
     return payment

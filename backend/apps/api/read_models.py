@@ -7,6 +7,8 @@ from apps.club.models import Booth, Tariff
 from apps.catalog.models import Product, PaymentMethod
 from apps.inventory.models import Batch
 from apps.payments.selectors import visible_transfers
+from apps.payments.provenance import connected
+from apps.payments.matching import transfer_dto
 from apps.audit.models import AuditEvent
 from apps.reports.services import report
 from apps.access.services import user_dto
@@ -53,19 +55,7 @@ def workspace(actor):
             product["defaultCost"] = 0
     transfers = []
     for transfer in visible_transfers(actor, now).reverse()[:100]:
-        row = rows(
-            [transfer],
-            dict(
-                id="id",
-                amount="amount",
-                receivedAt="received_at",
-                source="source",
-                status="status",
-            ),
-        )[0]
-        row["accountId"] = (
-            str(transfer.payment.account_id) if hasattr(transfer, "payment") else ""
-        )
+        row = transfer_dto(transfer, actor, now)
         transfers.append(row)
     audit_rows = []
     if privileged:
@@ -119,9 +109,20 @@ def workspace(actor):
         accounts=[account_row(a, actor, now) for a in accounts],
         methods=rows(
             PaymentMethod.objects.all().order_by("id"),
-            dict(id="id", name="name", kind="kind", enabled="enabled"),
+            dict(
+                id="id",
+                name="name",
+                kind="kind",
+                enabled="enabled",
+                p2pSource="p2p_source",
+                cardLast4="card_last4",
+            ),
         ),
         transfers=transfers,
+        p2pSources=[
+            {"source": source, "configured": connected(source)}
+            for source in ("uzcard", "humo")
+        ],
         shifts=shift_rows,
         expenses=rows(
             expenses,

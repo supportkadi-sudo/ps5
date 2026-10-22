@@ -1,3 +1,6 @@
+import { P2PPanel } from "../payments/P2PPanel";
+import { ServerAudit } from "../reports/ServerHistory";
+import { isDemo } from "../../shared/api/client";
 import { useState } from "react";
 import { useClub } from "../../app/context";
 import type { Account } from "../../shared/api/types";
@@ -10,7 +13,7 @@ export function AccountDetail({
   account: Account;
   onBack: () => void;
 }) {
-  const { w, run, busy, online } = useClub();
+  const { w, user, run, busy, online } = useClub();
   const [tab, setTab] = useState("bill"),
     [removing, setRemoving] = useState("");
   const locked = busy || !online,
@@ -151,9 +154,11 @@ export function AccountDetail({
                     {w.products
                       .filter((p) => p.enabled)
                       .map((p) => {
-                        const available = w.batches
-                          .filter((b) => b.productId === p.id)
-                          .reduce((n, b) => n + b.remaining, 0);
+                        const available = !isDemo
+                          ? (p.availableStock ?? 0)
+                          : w.batches
+                              .filter((b) => b.productId === p.id)
+                              .reduce((n, b) => n + b.remaining, 0);
                         return (
                           <button
                             disabled={locked || available === 0}
@@ -220,34 +225,70 @@ export function AccountDetail({
                   Подтверждаю полную оплату · закрыть счёт
                 </button>
               )}
-              <details className="p2p-panel">
-                <summary>P2P уведомления · {w.transfers.length}</summary>
-                <p className="muted">
-                  Тестовые данные. Реальный Telegram Business не подключён.
-                </p>
-                {w.transfers.map((t) => (
-                  <div className="line" key={t.id}>
-                    <div>
-                      <strong>{money(t.amount)}</strong>
-                      <small>
-                        {t.source} · {date(t.receivedAt)}
-                      </small>
+              {!isDemo && <P2PPanel a={a} />}
+              {isDemo && (
+                <details className="p2p-panel">
+                  <summary>P2P уведомления · {w.transfers.length}</summary>
+                  <p className="muted">
+                    Демонстрационные уведомления. Реальный банковский источник
+                    здесь не используется.
+                  </p>
+                  {w.transfers.map((t) => (
+                    <div className="line" key={t.id}>
+                      <div>
+                        <strong>{money(t.amount)}</strong>
+                        <small>
+                          {t.source} · {date(t.receivedAt)}
+                        </small>
+                      </div>
+                      <span className="badge">
+                        {t.accountId
+                          ? "Уже связан"
+                          : t.status === "verified_fixture"
+                            ? "Тест: доступен"
+                            : t.status === "ambiguous"
+                              ? "Ручная проверка"
+                              : "Не подтверждён"}
+                      </span>
                     </div>
-                    <span className="badge">
-                      {t.accountId
-                        ? "Уже связан"
-                        : t.status === "verified_fixture"
-                          ? "Тест: доступен"
-                          : t.status === "ambiguous"
-                            ? "Ручная проверка"
-                            : "Не подтверждён"}
-                    </span>
-                  </div>
-                ))}
-              </details>
+                  ))}
+                </details>
+              )}
             </Panel>
           )}
-          {tab === "history" && (
+          {tab === "history" && !isDemo && user.role !== "cashier" && (
+            <ServerAudit entityId={a.id} />
+          )}
+          {tab === "history" && !isDemo && a.refund && (
+            <p className="notice">
+              Возврат: {money(a.refund.amount)} · {a.refund.reason} ·{" "}
+              {date(a.refund.createdAt)} · возврат товара:{" "}
+              {a.refund.restockGoods ? "да" : "нет"}
+            </p>
+          )}
+          {tab === "history" &&
+            !isDemo &&
+            a.refund?.reversals.map((r) => (
+              <p key={r.paymentId}>
+                Возврат {money(r.amount)} ·{" "}
+                {w.methods.find((m) => m.id === r.methodId)?.name} · исходная
+                оплата #{r.paymentId.slice(0, 8)}
+              </p>
+            ))}
+          {tab === "history" && !isDemo && (
+            <Panel title="Игровые отрезки">
+              {a.segments.map((segment, i) => (
+                <p key={i}>
+                  {date(segment.startedAt)} →{" "}
+                  {segment.stoppedAt
+                    ? date(segment.stoppedAt)
+                    : "Игра продолжается"}
+                </p>
+              ))}
+              <p>Кассовая смена #{a.shiftId.slice(0, 8)}</p>
+            </Panel>
+          )}
+          {tab === "history" && isDemo && (
             <Panel title="История счёта">
               {w.audit
                 .filter((e) => e.entityId === a.id)
@@ -306,7 +347,7 @@ export function AccountDetail({
 function PaymentForm({ a }: { a: Account }) {
   const { w, run } = useClub();
   const [method, setMethod] = useState(
-    w.methods.find((m) => m.enabled)?.id ?? "",
+    w.methods.find((m) => m.enabled && (isDemo || m.kind !== "p2p"))?.id ?? "",
   );
   const p2p = w.methods.find((m) => m.id === method)?.kind === "p2p";
   return (
@@ -336,7 +377,7 @@ function PaymentForm({ a }: { a: Account }) {
           aria-label="Способ оплаты"
         >
           {w.methods
-            .filter((m) => m.enabled)
+            .filter((m) => m.enabled && (isDemo || m.kind !== "p2p"))
             .map((m) => (
               <button
                 type="button"

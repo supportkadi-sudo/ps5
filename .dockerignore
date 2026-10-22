@@ -2,5 +2,7 @@
 .env
 **/node_modules
 **/__pycache__
-frontend
+frontend/dist
+frontend/test-results
+frontend/playwright-report
 docs/screenshots

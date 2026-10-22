@@ -2983,6 +2983,269 @@
           }
         }
       }
+    },
+    "/api/v1/commands/pending": {
+      "get": {
+        "operationId": "GetPendingCommand",
+        "responses": {
+          "200": {
+            "description": "Actor-scoped durable retry slot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingState"
+                }
+              }
+            }
+          }
+        },
+        "x-backend-implemented": true
+      },
+      "post": {
+        "operationId": "StagePendingCommand",
+        "parameters": [
+          {
+            "name": "X-CSRFToken",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "$ref": "#/components/schemas/PendingCommand"
+                      }
+                    },
+                    "required": [
+                      "command"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "completeKey": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "completeKey"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Staged or cleared; does not execute command"
+          }
+        },
+        "x-backend-implemented": true
+      }
+    },
+    "/api/v1/accounts/{id}/expect-transfer": {
+      "post": {
+        "operationId": "ExpectTransfer",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Workspace"
+                    }
+                  ],
+                  "description": "Django returns CommandResult; mock-only adapter returns Workspace. HTTP client must load workspace after acknowledgement."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: retain original key and reconcile; key is unique per actor across endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpectTransfer"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-backend-implemented": true,
+        "summary": "Ожидать часть перевода на выбранную карту без записи оплаты"
+      }
+    },
+    "/api/v1/integrations/telegram-business": {
+      "post": {
+        "operationId": "IngestBankNotification",
+        "summary": "Authenticated bank bridge event; never creates payment or closes account",
+        "x-backend-implemented": true,
+        "security": [
+          {
+            "BankHmac": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-P2P-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-P2P-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankNotification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Persisted bank evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid signature or source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed event payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3378,6 +3641,40 @@
           },
           "refund": {
             "$ref": "#/components/schemas/Refund"
+          },
+          "expectedTransfer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "uzcard",
+                  "humo"
+                ]
+              },
+              "cardLast4": {
+                "type": "string",
+                "pattern": "^[0-9]{4}$"
+              },
+              "methodId": {
+                "type": "string"
+              },
+              "expiresAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "source",
+              "cardLast4",
+              "methodId",
+              "expiresAt"
+            ]
           }
         },
         "required": [
@@ -3421,6 +3718,18 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "p2pSource": {
+            "type": "string",
+            "enum": [
+              "",
+              "uzcard",
+              "humo"
+            ]
+          },
+          "cardLast4": {
+            "type": "string",
+            "pattern": "^(|[0-9]{4})$"
           }
         },
         "required": [
@@ -3438,9 +3747,17 @@
             "type": "string"
           },
           "amount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d{1,16}\\.\\d{2}$"
+              }
+            ]
           },
           "receivedAt": {
             "type": "string"
@@ -3458,6 +3775,25 @@
             ]
           },
           "accountId": {
+            "type": "string"
+          },
+          "cardLast4": {
+            "type": "string",
+            "pattern": "^(|[0-9]{4})$"
+          },
+          "processingStatus": {
+            "type": "string",
+            "enum": [
+              "found",
+              "unmatched",
+              "manual_review",
+              "accepted"
+            ]
+          },
+          "candidateAccountId": {
+            "type": "string"
+          },
+          "candidateMethodId": {
             "type": "string"
           }
         },
@@ -3811,6 +4147,12 @@
           },
           "report": {
             "$ref": "#/components/schemas/Report"
+          },
+          "p2pSources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/P2PSource"
+            }
           }
         },
         "required": [
@@ -4880,6 +5222,167 @@
           "items",
           "nextCursor"
         ]
+      },
+      "PendingCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "data"
+        ]
+      },
+      "PendingState": {
+        "type": "object",
+        "properties": {
+          "pending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "actorId": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "$ref": "#/components/schemas/PendingCommand"
+                  }
+                },
+                "required": [
+                  "actorId",
+                  "command"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "pending"
+        ]
+      },
+      "P2PSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "uzcard",
+              "humo"
+            ]
+          },
+          "configured": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "configured"
+        ]
+      },
+      "ExpectTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "methodId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "methodId",
+          "amount",
+          "expectedVersion"
+        ]
+      },
+      "BankNotification": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "uzcard",
+              "humo"
+            ]
+          },
+          "senderId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "senderIsBot": {
+            "type": "boolean",
+            "const": true
+          },
+          "businessConnectionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "chatId": {
+            "type": "integer"
+          },
+          "messageId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "source",
+          "senderId",
+          "senderIsBot",
+          "businessConnectionId",
+          "chatId",
+          "messageId",
+          "text"
+        ]
+      },
+      "BankAcknowledgement": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "evidenceStatus": {
+            "const": "verified_source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventId",
+          "evidenceStatus"
+        ]
       }
     },
     "securitySchemes": {
@@ -4887,6 +5390,12 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "sessionid"
+      },
+      "BankHmac": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-P2P-Signature",
+        "description": "KADI v1 HMAC-SHA256 over v1 + LF + Unix timestamp + LF + exact UTF-8 body. Requires X-P2P-Timestamp within 300 seconds. No session authentication."
       }
     }
   }

@@ -95,3 +95,28 @@ if not DEBUG and ("*" in ALLOWED_HOSTS or not all(ALLOWED_HOSTS)):
 if LOGIN_RATE_LIMIT < 1 or LOGIN_RATE_WINDOW_SECONDS < 1:
     raise ValueError("Login rate limits must be positive")
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "0") == "1"
+
+# Independent club credentials; empty configuration fails closed.
+P2P_WEBHOOK_SECRET = os.getenv("P2P_WEBHOOK_SECRET", "")
+P2P_BOT_TOKEN = os.getenv("P2P_BOT_TOKEN", "")
+P2P_BACKEND_URL = os.getenv("P2P_BACKEND_URL", "http://127.0.0.1:8000")
+
+
+def _sender_ids(value):
+    tokens = [x.strip() for x in value.split(",") if x.strip()]
+    if any(not x.isascii() or not x.isdecimal() or int(x) <= 0 for x in tokens):
+        raise ValueError("P2P sender allowlists require positive numeric IDs")
+    return frozenset(map(int, tokens))
+
+
+P2P_SOURCES = {
+    source: {
+        "sender_ids": _sender_ids(os.getenv(f"P2P_{source.upper()}_SENDER_IDS", "")),
+        "connection_id": os.getenv(
+            f"P2P_{source.upper()}_BUSINESS_CONNECTION_ID", ""
+        ).strip(),
+    }
+    for source in ("uzcard", "humo")
+}
+if P2P_SOURCES["uzcard"]["sender_ids"] & P2P_SOURCES["humo"]["sender_ids"]:
+    raise ValueError("Uzcard and Humo sender allowlists must be independent")
