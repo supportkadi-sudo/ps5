@@ -93,6 +93,16 @@ test("history cards, detail, server filters, cursor reset, empty and network err
     path: `/tmp/history-${info.project.name}.png`,
     fullPage: true,
   });
+  await page.getByRole("button", { name: "Включить тёмную тему" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(card).toHaveCSS("background-color", "rgb(25, 33, 48)");
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished)),
+  );
+  await page.screenshot({
+    path: `/tmp/history-dark-${info.project.name}.png`,
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Открыть чек 3180d325" }).click();
   await expect(
     page.getByRole("button", { name: "← История счетов" }),
@@ -137,4 +147,27 @@ test("history cards, detail, server filters, cursor reset, empty and network err
   await expect(
     page.getByRole("heading", { name: "Счетов пока нет" }),
   ).toBeVisible();
+});
+
+test("theme uses system preference, persists selection and works without storage", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Включить светлую тему" }).click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => {
+      throw new DOMException("Disabled", "SecurityError");
+    };
+    Storage.prototype.setItem = () => {
+      throw new DOMException("Disabled", "SecurityError");
+    };
+  });
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Включить светлую тему" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });

@@ -1,3 +1,4 @@
+import { ThemeToggle } from "./ThemeToggle";
 import { ServerAccounts } from "../features/reports/AccountHistory";
 import { ServerAudit } from "../features/reports/ServerHistory";
 import { useState } from "react";
@@ -65,6 +66,9 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
         <small>CRM игрового клуба · первая web-версия</small>
       </div>
       <section className="login-card">
+        <div className="login-controls">
+          <ThemeToggle />
+        </div>
         <span className="eyebrow">С ВОЗВРАЩЕНИЕМ</span>
         <h2>Начнём смену?</h2>
         <p>Войдите в своё рабочее место</p>
@@ -215,9 +219,12 @@ function Shell() {
             Рабочее пространство{" "}
             <b>/ {nav.find((n) => n.id === page)?.label}</b>
           </span>
-          <span className="demo-chip">
-            {isDemo ? "ДЕМО · mock API" : "Онлайн"}
-          </span>
+          <div className="topbar-actions">
+            <ThemeToggle />
+            <span className="demo-chip">
+              {isDemo ? "ДЕМО · mock API" : "Онлайн"}
+            </span>
+          </div>
         </header>
         <div
           className={"connection " + (!online ? "offline" : "")}

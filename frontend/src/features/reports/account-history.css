@@ -3,7 +3,7 @@
 }
 .history-filters {
   padding: 16px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   margin-bottom: 28px;
@@ -12,8 +12,8 @@
   margin-bottom: 12px;
 }
 .history-filters .tabs button.selected {
-  background: #edf1ff;
-  border-color: #bdc9f3;
+  background: var(--selected);
+  border-color: var(--input-border);
 }
 .history-selects,
 .history-range {
@@ -54,7 +54,7 @@
 }
 .history-card {
   padding: 20px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
   min-width: 0;
@@ -78,7 +78,7 @@
 }
 .history-booth > svg {
   flex-shrink: 0;
-  color: var(--primary);
+  color: var(--accent-text);
 }
 .history-booth h3 {
   margin: 0 0 3px;
@@ -99,7 +99,7 @@
   flex-shrink: 0;
 }
 .history-time strong {
-  color: #354360;
+  color: var(--text);
 }
 .history-breakdown {
   margin: 0;
@@ -140,7 +140,7 @@
   overflow-wrap: anywhere;
 }
 .history-due {
-  color: #8c5b10;
+  color: var(--warning-text);
 }
 .history-card-footer {
   border-top: 1px solid var(--line);
@@ -157,7 +157,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--primary);
+  color: var(--accent-text);
   border: 0;
   padding: 8px 0;
   background: transparent;
@@ -172,7 +172,7 @@
 }
 .history-empty h2 {
   margin-bottom: 8px;
-  color: #354360;
+  color: var(--text);
 }
 .history-pagination {
   display: flex;
