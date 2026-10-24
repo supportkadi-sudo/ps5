@@ -1,5 +1,7 @@
 import json
 from uuid import UUID
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 from rest_framework.views import APIView
 from apps.api.views import CommandView
 from rest_framework.response import Response
@@ -15,6 +17,7 @@ from apps.api.scopes import (
     shifts_for,
 )
 from apps.api.projections import rows, account_row, PAYMENT_FIELDS, shift_row
+from apps.api.account_history import account_history_row
 from apps.audit.models import AuditEvent
 from apps.core.rules import management, money
 from apps.inventory.models import Batch
@@ -93,10 +96,10 @@ class HistoryView(CommandView):
         with consistent_read():
             if self.resource == "accounts":
                 qs, field, project, allowed = (
-                    accounts_for(actor),
+                    accounts_for(actor).select_related("booth", "shift__cashier"),
                     "created_at",
-                    lambda a: account_row(a, actor, now),
-                    {"shiftId": "shift_id", "status": "status"},
+                    lambda a: account_history_row(a, actor, now),
+                    {"shiftId": "shift_id", "status": "status", "boothId": "booth_id"},
                 )
             elif self.resource == "shifts":
                 qs, field, project, allowed = (
@@ -151,7 +154,13 @@ class HistoryView(CommandView):
                 )
             else:
                 raise ValidationError("Unknown history resource")
-            if set(request.query_params) - set(allowed) - {"limit", "cursor"}:
+            date_keys = {"from", "to"} if self.resource == "accounts" else set()
+            if (
+                set(request.query_params)
+                - set(allowed)
+                - date_keys
+                - {"limit", "cursor"}
+            ):
                 raise ValidationError("Unknown history query parameter")
             filters = {
                 key: request.query_params[key]
@@ -159,7 +168,7 @@ class HistoryView(CommandView):
                 if key in request.query_params
             }
             for key, value in filters.items():
-                if key in ("shiftId", "accountId", "productId"):
+                if key in ("shiftId", "accountId", "productId", "boothId"):
                     try:
                         UUID(value)
                     except ValueError:
@@ -173,6 +182,29 @@ class HistoryView(CommandView):
                 ):
                     raise ValidationError("Invalid account status")
             qs = qs.filter(**{allowed[key]: value for key, value in filters.items()})
+            # Filter before pagination; bind the period to the signed cursor scope.
+            dates = {}
+            for key in date_keys:
+                if key not in request.query_params:
+                    continue
+                raw = request.query_params[key]
+                try:
+                    value = date.fromisoformat(raw)
+                    if value.isoformat() != raw or value.year == 9999:
+                        raise ValueError()
+                except ValueError:
+                    raise ValidationError("Invalid history date; expected YYYY-MM-DD")
+                dates[key] = value
+                filters[key] = raw
+            if "from" in dates and "to" in dates and dates["from"] > dates["to"]:
+                raise ValidationError("History start is after end")
+            for key, value in dates.items():
+                boundary = value + timedelta(days=1) if key == "to" else value
+                at = datetime.combine(
+                    boundary, time.min, tzinfo=ZoneInfo("Asia/Tashkent")
+                )
+                lookup = "created_at__lt" if key == "to" else "created_at__gte"
+                qs = qs.filter(**{lookup: at})
             return Response(
                 page(
                     qs,

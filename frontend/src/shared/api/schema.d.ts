@@ -762,6 +762,15 @@ export interface components {
                 methodId: string;
                 expiresAt: string;
             };
+            /** @description Presentation metadata on history pages. Names reflect current booth, shift cashier and payment method labels. Duration sums played segments, excluding pauses; monetary fields remain server calculated. */
+            history?: {
+                boothName: string;
+                console: string;
+                cashierName: string;
+                elapsedMinutes: number;
+                goodsAmount: number;
+                paymentMethods: string[];
+            };
         };
         PaymentMethod: {
             id: string;
@@ -1142,6 +1151,11 @@ export interface operations {
                 cursor?: string;
                 shiftId?: string;
                 status?: string;
+                boothId?: string;
+                /** @description Inclusive creation date in Asia/Tashkent; applied before pagination. */
+                from?: string;
+                /** @description Inclusive creation date in Asia/Tashkent; applied before pagination. */
+                to?: string;
             };
             header?: never;
             path?: never;

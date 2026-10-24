@@ -1,0 +1,202 @@
+.account-history {
+  max-width: 1100px;
+}
+.history-filters {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 28px;
+}
+.history-filters .tabs {
+  margin-bottom: 12px;
+}
+.history-filters .tabs button.selected {
+  background: var(--selected);
+  border-color: var(--input-border);
+}
+.history-selects,
+.history-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.history-selects label,
+.history-range label {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.history-range {
+  margin-bottom: 16px;
+  align-items: end;
+}
+.history-hint {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.history-day {
+  margin-bottom: 24px;
+}
+.history-day > h2 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--muted);
+}
+.history-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.history-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  min-width: 0;
+  box-shadow: 0 2px 6px #18223a04;
+}
+.history-card-heading,
+.history-booth,
+.history-time,
+.history-total,
+.history-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.history-card-heading {
+  justify-content: space-between;
+  align-items: start;
+}
+.history-booth {
+  min-width: 0;
+}
+.history-booth > svg {
+  flex-shrink: 0;
+  color: var(--accent-text);
+}
+.history-booth h3 {
+  margin: 0 0 3px;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.history-booth span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.history-time {
+  margin: 18px 0;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.history-time > svg {
+  flex-shrink: 0;
+}
+.history-time strong {
+  color: var(--text);
+}
+.history-breakdown {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.history-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+.history-breakdown dt {
+  color: var(--muted);
+}
+.history-breakdown dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.history-total {
+  justify-content: space-between;
+  padding: 8px 0 14px;
+}
+.history-total > span {
+  font-size: 13px;
+}
+.history-total strong {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.7px;
+}
+.history-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.history-due {
+  color: var(--warning-text);
+}
+.history-card-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.history-card-footer > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.history-card-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-text);
+  border: 0;
+  padding: 8px 0;
+  background: transparent;
+}
+.history-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+.history-empty > svg {
+  margin-bottom: 16px;
+}
+.history-empty h2 {
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.history-pagination {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.history-pagination > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .history-cards {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .history-card {
+    padding: 16px;
+  }
+  .history-range label {
+    min-width: 100%;
+  }
+  .history-total strong {
+    font-size: 22px;
+  }
+}
