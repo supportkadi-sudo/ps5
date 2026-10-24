@@ -36,6 +36,8 @@ test("history cards, detail, server filters, cursor reset, empty and network err
       paymentMethods: ["Наличные", "Humo"],
     },
   };
+  // A workspace snapshot may have the same version but older running-time totals.
+  w.accounts = [{ ...a, total: 1000, paid: 1000 }];
   const requests: URL[] = [];
   let fail = false;
   await page.route("**/api/v1/**", async (route) => {
@@ -95,7 +97,23 @@ test("history cards, detail, server filters, cursor reset, empty and network err
   await expect(
     page.getByRole("button", { name: "← История счетов" }),
   ).toBeVisible();
+  await expect(page.locator(".detail .total")).toHaveText(/165\s*000 сум/);
   await page.getByRole("button", { name: "← История счетов" }).click();
+  const payload = '<img src=x onerror="window.historyXss=1">';
+  a.history!.cashierName = payload;
+  a.history!.paymentMethods = [payload];
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
+  await expect(
+    card.getByText(`Кассир смены: ${payload}`, { exact: true }),
+  ).toBeVisible();
+  await expect(card.locator("img")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => (window as Window & { historyXss?: number }).historyXss,
+    ),
+  ).toBeUndefined();
+  a.history!.cashierName = "Тимур";
+  a.history!.paymentMethods = ["Наличные", "Humo"];
   await page.getByRole("button", { name: "Следующие счета" }).click();
   await expect
     .poll(() => requests.at(-1)?.searchParams.get("cursor"))

@@ -60,7 +60,7 @@ export function ServerAccounts() {
         key={account.id}
         account={
           w.accounts.find(
-            (a) => a.id === account.id && a.version >= account.version,
+            (a) => a.id === account.id && a.version > account.version,
           ) ?? account
         }
         onBack={() => {

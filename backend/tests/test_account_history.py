@@ -63,12 +63,36 @@ class AccountHistoryTests(CashierCase):
             ).json()["items"][0]["id"],
             str(accounts[4].pk),
         )
+        for changed in [
+            {"boothId": str(other.pk)},
+            {"status": "draft"},
+            {"from": "2026-01-01"},
+        ]:
+            self.assertEqual(
+                self.client.get(
+                    "/api/v1/accounts",
+                    {**params, **changed, "cursor": first["nextCursor"]},
+                ).status_code,
+                400,
+            )
+        self.client.force_authenticate(self.manager)
+        self.assertEqual(
+            self.client.get(
+                "/api/v1/accounts", {**params, "cursor": first["nextCursor"]}
+            ).status_code,
+            400,
+        )
+        self.client.force_authenticate(self.cashier)
         for bad in [
             {"from": "2026-02-30"},
             {"to": "20260102"},
             {"from": "2026-01-03", "to": "2026-01-02"},
             {"boothId": "bad"},
             {"status": "paid"},
+            {"boothId": "' OR 1=1 --"},
+            {"from": "2026-01-01' OR 1=1 --"},
+            {"status": "closed' OR 1=1 --"},
+            {"limit": "100000"},
         ]:
             self.assertEqual(
                 self.client.get("/api/v1/accounts", bad).status_code, 400, bad
@@ -78,6 +102,10 @@ class AccountHistoryTests(CashierCase):
             for p in CONTRACT["paths"]["/api/v1/accounts"]["get"]["parameters"]
         }
         self.assertTrue({"from", "to", "boothId"} <= fields)
+        self.client.force_authenticate(user=None)
+        self.assertIn(
+            self.client.get("/api/v1/accounts", params).status_code, (401, 403)
+        )
 
     def test_metadata_excludes_pauses_and_removed_goods_and_keeps_scope(self):
         self.shift()
