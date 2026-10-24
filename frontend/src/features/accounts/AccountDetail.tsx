@@ -9,9 +9,11 @@ import { money, date, status, actionNames } from "../../shared/lib/format";
 export function AccountDetail({
   account: a,
   onBack,
+  backLabel = "← Все кабинки",
 }: {
   account: Account;
   onBack: () => void;
+  backLabel?: string;
 }) {
   const { w, user, run, busy, online } = useClub();
   const [tab, setTab] = useState("bill"),
@@ -23,7 +25,7 @@ export function AccountDetail({
   return (
     <div className="detail">
       <button className="back" onClick={onBack}>
-        ← Все кабинки
+        {backLabel}
       </button>
       <div className="section-heading">
         <div>

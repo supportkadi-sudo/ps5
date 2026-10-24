@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { useClub } from "../../app/context";
 import { api } from "../../shared/api/client";
 import type { HttpApi } from "../../shared/api/http";
-import type { Schema, Account } from "../../shared/api/types";
-import { AccountDetail } from "../accounts/AccountDetail";
+import type { Schema } from "../../shared/api/types";
 import { date, money, actionNames } from "../../shared/lib/format";
 export function useServerPage<K extends keyof Schema>(path: string, schema: K) {
   const [data, setData] = useState<Schema[K] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [cursor, setCursor] = useState("");
+  const [navigation, setNavigation] = useState({ path, cursor: "" });
+  const cursor = navigation.path === path ? navigation.cursor : "";
+  const [revision, setRevision] = useState(0);
+  const queryKey = path + "|" + cursor + "|" + revision;
+  const [loadedKey, setLoadedKey] = useState("");
   useEffect(() => {
     let active = true;
+    if (navigation.path !== path) setNavigation({ path, cursor: "" });
     setBusy(true);
     setError("");
     (api as HttpApi)
@@ -23,10 +26,17 @@ export function useServerPage<K extends keyof Schema>(path: string, schema: K) {
         schema,
       )
       .then((d) => {
-        if (active) setData(d);
+        if (active) {
+          setData(d);
+          setLoadedKey(queryKey);
+        }
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active) {
+          setData(null);
+          setError(e.message);
+          setLoadedKey(queryKey);
+        }
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -34,8 +44,17 @@ export function useServerPage<K extends keyof Schema>(path: string, schema: K) {
     return () => {
       active = false;
     };
-  }, [path, schema, cursor]);
-  return { data, error, busy, next: setCursor, first: () => setCursor("") };
+  }, [path, schema, cursor, revision]);
+  return {
+    data: loadedKey === queryKey ? data : null,
+    error: loadedKey === queryKey ? error : "",
+    busy: busy || loadedKey !== queryKey,
+    next: (cursor: string) => setNavigation({ path, cursor }),
+    first: () => {
+      setNavigation({ path, cursor: "" });
+      setRevision((r) => r + 1);
+    },
+  };
 }
 export function ServerAudit({ entityId = "" }: { entityId?: string }) {
   const { data, error, busy, next, first } = useServerPage(
@@ -68,65 +87,6 @@ export function ServerAudit({ entityId = "" }: { entityId?: string }) {
         Следующая страница
       </button>
     </section>
-  );
-}
-export function ServerAccounts() {
-  const { data, error, busy, next, first } = useServerPage(
-    "/api/v1/accounts",
-    "AccountPage",
-  );
-  const [account, setAccount] = useState<Account | null>(null);
-  const [detailError, setDetailError] = useState("");
-  async function open(id: string) {
-    setDetailError("");
-    try {
-      setAccount(
-        await (api as HttpApi).request<Account>(
-          "/api/v1/accounts/" + encodeURIComponent(id),
-          {},
-          "Account",
-        ),
-      );
-    } catch (e) {
-      setDetailError(e instanceof Error ? e.message : "Ошибка");
-    }
-  }
-  return (
-    <>
-      <h1>История счетов</h1>
-      <p>
-        Страницы из PostgreSQL. Рабочее место содержит только последние счета.
-      </p>
-      {(error || detailError) && <p role="alert">{error || detailError}</p>}
-      {data?.items.map((a) => (
-        <button
-          className="account-row"
-          key={a.id}
-          disabled={busy}
-          onClick={() => void open(a.id)}
-        >
-          <span>
-            #{a.id.slice(0, 8)} · {date(a.createdAt)} · {a.status}
-          </span>
-          <b>{money(a.total)}</b>
-        </button>
-      ))}
-      <button onClick={first} disabled={busy}>
-        С начала
-      </button>
-      <button
-        disabled={busy || !data?.nextCursor}
-        onClick={() => next(data!.nextCursor ?? "")}
-      >
-        Следующая страница
-      </button>
-      {account && (
-        <AccountDetail
-          account={account}
-          onBack={() => setAccount(null)}
-        />
-      )}
-    </>
   );
 }
 export function ServerBatches() {

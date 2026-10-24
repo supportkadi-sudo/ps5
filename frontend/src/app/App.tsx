@@ -1,4 +1,5 @@
-import { ServerAccounts, ServerAudit } from "../features/reports/ServerHistory";
+import { ServerAccounts } from "../features/reports/AccountHistory";
+import { ServerAudit } from "../features/reports/ServerHistory";
 import { useState } from "react";
 import {
   Gamepad2,
@@ -215,7 +216,7 @@ function Shell() {
             <b>/ {nav.find((n) => n.id === page)?.label}</b>
           </span>
           <span className="demo-chip">
-            {isDemo ? "ДЕМО · mock API" : "Онлайн · Django / PostgreSQL"}
+            {isDemo ? "ДЕМО · mock API" : "Онлайн"}
           </span>
         </header>
         <div
@@ -227,7 +228,7 @@ function Shell() {
               <span className="green-dot" />{" "}
               {isDemo
                 ? "Локальная демоверсия · сервер не подключён"
-                : "Онлайн · серверные данные"}
+                : "Подключено"}
             </>
           ) : (
             <>
