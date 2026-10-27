@@ -26,3 +26,26 @@ test("mobile menu stays usable without a dark overlay and respects reduced motio
     page.getByRole("heading", { name: "Каталог и склад", exact: true }),
   ).toBeVisible();
 });
+
+test("menu can reopen immediately after selecting a section", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Войти в клуб" }).click();
+  const menu = page.getByRole("button", { name: "Меню", exact: true });
+  await menu.click();
+  await page
+    .locator("#club-navigation")
+    .getByRole("button", { name: "Смена и касса" })
+    .click();
+  await expect(page.locator(".sidebar")).toBeHidden();
+  await menu.click();
+  await page
+    .locator("#club-navigation")
+    .getByRole("button", { name: "Игровой зал" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Игровой зал", exact: true }),
+  ).toBeVisible();
+});

@@ -1060,16 +1060,11 @@ footer {
     width: 270px;
     top: 58px;
     bottom: calc(66px + env(safe-area-inset-bottom));
-    transition:
-      transform 220ms ease,
-      visibility 0s linear 220ms;
+    transition: transform 220ms ease;
   }
   .sidebar.open {
     visibility: visible;
     transform: translateX(0);
-    transition:
-      transform 220ms ease,
-      visibility 0s;
   }
   .sidebar > .brand {
     display: none;
