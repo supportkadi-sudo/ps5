@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Gamepad2, Plus, ArrowUpRight } from "lucide-react";
 import { useClub } from "../app/context";
 import { AccountDetail, elapsed } from "../features/accounts/AccountDetail";
 import { Form, Panel } from "../shared/ui/Form";
 import { money, status } from "../shared/lib/format";
+const layoutKey = "club-booth-columns";
+function initialColumns(): number {
+  try {
+    const saved = Number(localStorage.getItem(layoutKey));
+    return [1, 2, 3].includes(saved) ? saved : 2;
+  } catch {
+    return 2;
+  }
+}
+
 export function Cashier() {
   const { w, run, user, busy, online } = useClub();
   const [selected, setSelected] = useState(""),
     [creating, setCreating] = useState(""),
-    [filter, setFilter] = useState("all");
+    [filter, setFilter] = useState("all"),
+    [columns, setColumns] = useState(initialColumns);
+  const changeColumns = (value: number) => {
+    setColumns(value);
+    try {
+      localStorage.setItem(layoutKey, String(value));
+    } catch {
+      // The layout still works for this session if storage is unavailable.
+    }
+  };
   const active = w.accounts.filter(
     (a) => !["closed", "cancelled"].includes(a.status),
   );
@@ -74,14 +93,40 @@ export function Cashier() {
             ))}
           </div>
         </div>
+        <div
+          className="booth-layout-control"
+          role="group"
+          aria-label="Количество колонок"
+        >
+          <span>Колонки</span>
+          {[1, 2, 3].map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={columns === value}
+              onClick={() => changeColumns(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
         {!w.shifts.some((s) => !s.closedAt && s.cashierId === user.id) && (
           <p className="notice">
             Откройте смену в разделе «Смена и касса», чтобы создавать счета.
           </p>
         )}
-        <div className="booth-grid">
+        <div
+          className={"booth-grid " + (columns > 1 ? "is-compact" : "")}
+          style={{ "--booth-columns": columns } as CSSProperties}
+        >
           {w.booths
             .filter((b) => b.enabled)
+            .sort((a, b) =>
+              a.name.localeCompare(b.name, "ru", {
+                numeric: true,
+                sensitivity: "base",
+              }),
+            )
             .filter(
               (b) =>
                 filter === "all" ||

@@ -422,9 +422,28 @@ small {
   color: var(--accent-text);
   box-shadow: 0 1px 2px #18223a08;
 }
+.booth-layout-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.booth-layout-control button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px;
+}
+.booth-layout-control button[aria-pressed="true"] {
+  color: var(--accent-text);
+  border-color: var(--primary);
+  background: var(--surface-alt);
+}
 .booth-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--booth-columns, 2), minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -911,6 +930,7 @@ footer {
   }
   .has-selection .hall-pane > .section-heading,
   .has-selection .hall-pane > .stats,
+  .has-selection .hall-pane > .booth-layout-control,
   .has-selection .hall-pane > .panel {
     display: none;
   }
@@ -978,9 +998,6 @@ footer {
   .connection {
     padding-left: 20px;
     padding-right: 20px;
-  }
-  .booth-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .account-grid,
   .two-col {
@@ -1104,7 +1121,7 @@ footer {
     font-size: 12px;
   }
   .booth-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(var(--booth-columns, 2), minmax(0, 1fr));
     gap: 9px;
   }
   .booth {
@@ -1145,6 +1162,50 @@ footer {
   }
   .booth-bottom b {
     font-size: 14px;
+  }
+  .booth-grid.is-compact .booth {
+    display: flex;
+    padding: 10px;
+    gap: 0;
+    min-width: 0;
+  }
+  .booth-grid.is-compact .booth-top {
+    order: 1;
+    margin: 0 0 7px;
+    min-width: 0;
+  }
+  .booth-grid.is-compact .badge {
+    white-space: normal;
+    font-size: 10px;
+  }
+  .booth-grid.is-compact .booth h2 {
+    order: 0;
+    align-self: flex-start;
+    font-size: 14px;
+    margin-bottom: 6px;
+    overflow-wrap: anywhere;
+  }
+  .booth-grid.is-compact .booth p {
+    order: 2;
+    overflow-wrap: anywhere;
+  }
+  .booth-grid.is-compact .booth.free p,
+  .booth-grid.is-compact .booth.free .booth-bottom span {
+    display: none;
+  }
+  .booth-grid.is-compact .booth-bottom {
+    order: 3;
+    margin-top: auto;
+    padding-top: 7px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .booth-grid.is-compact .booth-bottom strong {
+    font-size: 16px;
+  }
+  .booth-grid.is-compact .booth-bottom b {
+    font-size: 12px;
+    overflow-wrap: anywhere;
   }
   .panel {
     padding: 18px 16px;
