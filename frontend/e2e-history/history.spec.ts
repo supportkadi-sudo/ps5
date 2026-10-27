@@ -171,6 +171,19 @@ test("history cards, detail, server filters, cursor reset, empty and network err
 test("theme uses system preference, persists selection and works without storage", async ({
   page,
 }) => {
+  await page.route("**/api/v1/auth/csrf", (route) =>
+    route.fulfill({ json: { csrfToken: "test" } }),
+  );
+  await page.route("**/api/v1/workspace", (route) =>
+    route.fulfill({
+      status: 403,
+      json: {
+        code: "not_authenticated",
+        message: "Authentication required",
+        fieldErrors: {},
+      },
+    }),
+  );
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
