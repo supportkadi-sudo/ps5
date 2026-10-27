@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 test("mobile menu stays usable without a dark overlay and respects reduced motion", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("button", { name: "Войти в клуб" }).click();
