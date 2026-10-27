@@ -23,7 +23,7 @@ class RefundTests(CashierCase):
             "AcceptPayment",
             {
                 "expectedVersion": 3,
-                "amount": 10000,
+                "amount": 10500,
                 "methodId": str(self.cash.pk),
                 "transferId": "",
                 "confirmedByCashier": True,
@@ -40,7 +40,7 @@ class RefundTests(CashierCase):
             self.command("RefundAccount", data, a)
         self.command("RefundAccount", data, a, actor=self.manager)
         self.assertEqual(Payment.objects.count(), 1)
-        self.assertEqual(PaymentReversal.objects.get().amount, 10000)
+        self.assertEqual(PaymentReversal.objects.get().amount, 10500)
         self.assertFalse(Line.objects.get().removed)
         self.assertEqual(Batch.objects.get().remaining, 2)
         self.assertEqual(expected(Shift.objects.get(pk=shift)), 100000)

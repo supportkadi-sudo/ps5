@@ -20,13 +20,12 @@ class CashierTests(CashierCase):
         shift = self.shift()
         account = self.account()
         a = Account.objects.get(pk=account)
-        self.assertEqual(a.status, "draft")
-        self.assertFalse(a.segments.exists())
+        self.assertEqual(a.status, "playing")
+        self.assertTrue(a.segments.exists())
         batch = self.receive()
-        self.command("StartTimer", {"expectedVersion": 1}, account)
         self.command(
             "AddLine",
-            {"expectedVersion": 2, "productId": str(self.product.pk), "quantity": 1},
+            {"expectedVersion": 1, "productId": str(self.product.pk), "quantity": 1},
             account,
         )
         start = timezone.now() - timedelta(minutes=80)
@@ -35,14 +34,14 @@ class CashierTests(CashierCase):
             "apps.accounts.services.timezone.now",
             return_value=start + timedelta(minutes=80),
         ):
-            self.command("Precheck", {"expectedVersion": 3}, account)
+            self.command("Precheck", {"expectedVersion": 2}, account)
         a.refresh_from_db()
         self.assertEqual(a.status, "awaiting_payment")
         self.assertEqual(amounts(a, timezone.now())["total"], 63500)
         self.command(
             "AcceptPayment",
             {
-                "expectedVersion": 4,
+                "expectedVersion": 3,
                 "methodId": str(self.cash.pk),
                 "amount": 20000,
                 "transferId": "",
@@ -51,11 +50,11 @@ class CashierTests(CashierCase):
             account,
         )
         with self.assertRaises(Conflict):
-            self.command("CloseAccount", {"expectedVersion": 5}, account)
+            self.command("CloseAccount", {"expectedVersion": 4}, account)
         self.command(
             "AcceptPayment",
             {
-                "expectedVersion": 5,
+                "expectedVersion": 4,
                 "methodId": str(self.card.pk),
                 "amount": 43500,
                 "transferId": "",
@@ -65,7 +64,7 @@ class CashierTests(CashierCase):
         )
         a.refresh_from_db()
         self.assertEqual(a.status, "awaiting_payment")
-        self.command("CloseAccount", {"expectedVersion": 6}, account)
+        self.command("CloseAccount", {"expectedVersion": 5}, account)
         self.command(
             "AddExpense",
             {
@@ -182,6 +181,7 @@ class CashierTests(CashierCase):
         account = self.account()
         a = Account.objects.get(pk=account)
         now = timezone.now()
+        Segment.objects.filter(account=a).delete()
         for offset in (0, 50):
             Segment.objects.create(
                 account=a,
@@ -249,7 +249,7 @@ class CashierTests(CashierCase):
                 {
                     "expectedVersion": 4,
                     "methodId": str(self.cash.pk),
-                    "amount": 5001,
+                    "amount": 5501,
                     "transferId": "",
                     "confirmedByCashier": True,
                 },
@@ -273,27 +273,25 @@ class CashierTests(CashierCase):
     def test_handover_preserves_timer_and_requires_new_shift(self):
         shift = self.shift()
         a = self.account()
-        self.command("StartTimer", {"expectedVersion": 1}, a)
         self.command("CloseShift", {"actualCash": 100000, "reason": ""}, shift)
         with self.assertRaises(Conflict):
-            self.command("Precheck", {"expectedVersion": 2}, a)
+            self.command("Precheck", {"expectedVersion": 1}, a)
         new_shift = self.command(
             "OpenShift", {"openingCash": 100000}, actor=self.manager
         )["entityId"]
         account = Account.objects.get(pk=a)
         self.assertEqual(str(account.shift_id), new_shift)
         self.assertEqual(account.status, "playing")
-        self.assertEqual(account.version, 3)
+        self.assertEqual(account.version, 2)
         self.assertTrue(AuditEvent.objects.filter(action="Handover").exists())
 
     def test_precheck_audit_uses_same_recalculated_timestamp(self):
         self.shift()
         a = self.account()
-        self.command("StartTimer", {"expectedVersion": 1}, a)
         now = timezone.now()
         Segment.objects.filter(account_id=a).update(started_at=now - timedelta(hours=1))
         with patch("apps.accounts.services.timezone.now", return_value=now):
-            self.command("Precheck", {"expectedVersion": 2}, a)
+            self.command("Precheck", {"expectedVersion": 1}, a)
         event = AuditEvent.objects.get(action="Precheck")
         self.assertEqual(event.before["total"], 40000)
         self.assertEqual(event.after["total"], 40000)

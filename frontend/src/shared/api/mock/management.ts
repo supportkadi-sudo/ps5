@@ -117,7 +117,11 @@ export function managementCommand(
     case "SaveTariff":
       integer(c.data.tariff.hourlyRate, true);
       reason(c.data.tariff.name);
-      return save(w.tariffs, c.data.tariff);
+      return save(w.tariffs, {
+        ...c.data.tariff,
+        consoleCode:
+          w.tariffs.find((t) => t.id === c.data.tariff.id)?.consoleCode ?? null,
+      });
     case "SaveBooth":
       reason(c.data.booth.name);
       if (!w.tariffs.some((t) => t.id === c.data.booth.tariffId))

@@ -20,3 +20,6 @@ user, created = get_user_model().objects.get_or_create(
 if created:
     user.set_password("Isolated-E2E-Password-786!")
     user.save()
+
+from apps.club.models import Tariff
+Tariff.objects.get_or_create(console_code="PS5", defaults={"name": "PS5", "hourly_rate": 60000})

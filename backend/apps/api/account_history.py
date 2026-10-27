@@ -12,7 +12,7 @@ def account_history_row(account, actor, now):
     )
     row["history"] = dict(
         boothName=account.booth.name,
-        console=account.booth.console,
+        console=account.console,
         cashierName=account.shift.cashier.get_full_name()
         or account.shift.cashier.username,
         elapsedMinutes=micros // 60_000_000,

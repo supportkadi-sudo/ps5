@@ -5,6 +5,7 @@ from apps.core.models import Entity, MAX_MONEY
 class Tariff(Entity):
     name = models.CharField(max_length=100)
     hourly_rate = models.PositiveBigIntegerField()
+    console_code = models.CharField(max_length=3, unique=True, null=True, blank=True)
 
     class Meta:
         constraints = [

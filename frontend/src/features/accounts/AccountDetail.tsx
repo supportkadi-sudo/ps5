@@ -32,7 +32,7 @@ export function AccountDetail({
           <span className="eyebrow">СЧЁТ #{a.id.slice(0, 6)}</span>
           <h1>{booth.name}</h1>
           <p>
-            {booth.console} · {money(a.hourlyRate)}/час ·{" "}
+            {a.console} · {money(a.hourlyRate)}/час ·{" "}
             {a.customerName || "Гость"}
           </p>
         </div>

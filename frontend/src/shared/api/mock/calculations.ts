@@ -1,27 +1,23 @@
 import type { Workspace, Account, Schema } from "../types";
 export function recalculate(w: Workspace, now = Date.now()) {
   for (const a of w.accounts) {
-    const seconds = a.segments.reduce(
+    const milliseconds = a.segments.reduce(
       (n, s) =>
         n +
         Math.max(
           0,
-          Math.floor(
-            ((s.stoppedAt ? Date.parse(s.stoppedAt) : now) -
-              Date.parse(s.startedAt)) /
-              1000,
-          ),
+          (s.stoppedAt ? Date.parse(s.stoppedAt) : now) -
+            Date.parse(s.startedAt),
         ),
       0,
     );
-    const gameNumerator = BigInt(seconds) * BigInt(a.hourlyRate);
+    const minutes = BigInt(Math.ceil(milliseconds / 60000));
+    const gameNumerator = minutes * BigInt(a.hourlyRate);
     const goods = a.lines
       .filter((l) => !l.removed)
       .reduce((n, l) => n + BigInt(l.unitPrice) * BigInt(l.quantity), 0n);
-    a.gameAmount = Number(gameNumerator / 3600n);
-    a.total = Number(
-      ((gameNumerator + goods * 3600n + 900000n) / 1800000n) * 500n,
-    );
+    a.gameAmount = Number(gameNumerator / 60n);
+    a.total = Number(((gameNumerator + goods * 60n + 15000n) / 30000n) * 500n);
     a.paid = a.payments.reduce((n, p) => n + p.amount, 0);
     a.due = a.total - a.paid;
     for (const value of [

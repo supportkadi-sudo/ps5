@@ -29,6 +29,7 @@ test("responsive screens remain readable and contained", async ({
         key: crypto.randomUUID(),
         data: {
           boothId: "b1",
+          tariffId: "ps5",
           customerName: "Гость с длинным именем",
           customerPhone: "",
         },
@@ -40,16 +41,15 @@ test("responsive screens remain readable and contained", async ({
         entityId: id,
         data: { expectedVersion: 1, productId: "cola", quantity: 2 },
       });
-      await api.execute({
-        name: "StartTimer",
-        key: crypto.randomUUID(),
-        entityId: id,
-        data: { expectedVersion: w.accounts[0].version },
-      });
       w = await api.execute({
         name: "CreateAccount",
         key: crypto.randomUUID(),
-        data: { boothId: "b4", customerName: "", customerPhone: "" },
+        data: {
+          boothId: "b4",
+          tariffId: "ps5",
+          customerName: "",
+          customerPhone: "",
+        },
       });
       await api.execute({
         name: "Precheck",

@@ -106,11 +106,7 @@ export function SettingsPage() {
               <div className="line" key={b.id}>
                 <div>
                   <b>{b.name}</b>
-                  <small>
-                    {b.console} ·{" "}
-                    {w.tariffs.find((t) => t.id === b.tariffId)?.name} ·{" "}
-                    {b.enabled ? "Активна" : "Отключена"}
-                  </small>
+                  <small>{b.enabled ? "Активна" : "Отключена"}</small>
                 </div>
                 <button onClick={() => setEditing(b.id)}>Изменить</button>
               </div>
@@ -126,20 +122,6 @@ export function SettingsPage() {
                 fields={[
                   { name: "name", label: "Название", value: booth?.name },
                   {
-                    name: "console",
-                    label: "Приставка",
-                    value: booth?.console,
-                  },
-                  {
-                    name: "tariffId",
-                    label: "Тариф",
-                    value: booth?.tariffId,
-                    options: w.tariffs.map((t) => ({
-                      value: t.id,
-                      label: t.name,
-                    })),
-                  },
-                  {
                     name: "enabled",
                     label: "Статус",
                     value: String(booth?.enabled ?? true),
@@ -154,8 +136,8 @@ export function SettingsPage() {
                     booth: {
                       id: booth?.id ?? (isDemo ? crypto.randomUUID() : ""),
                       name: d.name,
-                      console: d.console,
-                      tariffId: d.tariffId,
+                      console: booth?.console ?? "",
+                      tariffId: booth?.tariffId ?? w.tariffs[0]?.id ?? "",
                       enabled: d.enabled === "true",
                     },
                   });

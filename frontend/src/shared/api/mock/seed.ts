@@ -9,9 +9,20 @@ export function seed(): Workspace {
       { id: "cashier", name: "Азиз", role: "cashier" },
     ],
     tariffs: [
-      { id: "ps5", name: "PlayStation 5", hourlyRate: 40000 },
-      { id: "ps4", name: "PlayStation 4", hourlyRate: 30000 },
-      { id: "vip", name: "VIP · PS5", hourlyRate: 60000 },
+      {
+        id: "ps5",
+        name: "PlayStation 5",
+        hourlyRate: 60000,
+        consoleCode: "PS5",
+      },
+      {
+        id: "ps4",
+        name: "PlayStation 4",
+        hourlyRate: 50000,
+        consoleCode: "PS4",
+      },
+      { id: "ps3", name: "PlayStation 3", hourlyRate: 40000, consoleCode: "PS3" },
+      { id: "vip", name: "VIP · PS5", hourlyRate: 60000, consoleCode: null },
     ],
     booths: [
       {

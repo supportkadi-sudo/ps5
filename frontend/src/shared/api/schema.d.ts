@@ -686,6 +686,7 @@ export interface components {
             id: string;
             name: string;
             hourlyRate: number;
+            consoleCode?: string | null;
         };
         Product: {
             id: string;
@@ -771,6 +772,8 @@ export interface components {
                 goodsAmount: number;
                 paymentMethods: string[];
             };
+            tariffId: string;
+            console: string;
         };
         PaymentMethod: {
             id: string;
@@ -897,6 +900,7 @@ export interface components {
             customerName: string;
             customerPhone: string;
             expectedVersion?: number;
+            tariffId: string;
         };
         StartTimer: {
             expectedVersion: number;

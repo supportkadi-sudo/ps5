@@ -60,19 +60,8 @@ test("real session owner setup → cashier FIFO, timer, split payments, lost ack
     page.getByText(cashier + " · cashier", { exact: false }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Кабинки и тарифы" }).click();
-  await page.getByRole("button", { name: "+ Новый тариф" }).click();
-  await save(page, { name: "Tariff-" + suffix, hourlyRate: "60000" });
   await page.getByRole("button", { name: "+ Новая кабинка" }).click();
-  const tariff = await page
-    .getByRole("dialog")
-    .locator("[name=tariffId] option")
-    .filter({ hasText: "Tariff-" + suffix })
-    .getAttribute("value");
-  await save(page, {
-    name: "Booth-" + suffix,
-    console: "PS5",
-    tariffId: tariff!,
-  });
+  await save(page, { name: "Booth-" + suffix });
   await page.getByRole("button", { name: "Оплата", exact: true }).click();
   for (const [kind, name] of [
     ["cash", "Cash-"],
@@ -124,16 +113,20 @@ test("real session owner setup → cashier FIFO, timer, split payments, lost ack
     .getByRole("button")
     .filter({ has: page.getByRole("heading", { name: "Booth-" + suffix }) })
     .click();
-  await page.getByRole("button", { name: "Создать счёт", exact: true }).click();
+  const ps5 = await page
+    .locator("[name=tariffId] option")
+    .filter({ hasText: "PS5" })
+    .getAttribute("value");
+  await page.locator("[name=tariffId]").selectOption(ps5!);
+  await page
+    .getByRole("button", {
+      name: "Открыть счёт и запустить таймер",
+      exact: true,
+    })
+    .click();
   await page
     .getByRole("button")
     .filter({ has: page.getByRole("heading", { name: "Booth-" + suffix }) })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "▶ Запустить таймер", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "▶ Запустить таймер", exact: true })
     .click();
   const add = page.getByRole("button", {
     name: new RegExp("Добавить Cola-" + suffix),
@@ -267,9 +260,10 @@ test("PostgreSQL serializes parallel last-stock and payment requests, backend en
     expectedVersion: 0,
     reason: "E2E race",
   });
-  const tariffId = await create("club/tariffs", {
-    tariff: { id: "", name: username, hourlyRate: 60000 },
-  });
+  const workspace = await (await page.request.get("/api/v1/workspace")).json();
+  const tariffId = workspace.tariffs.find(
+    (t: { consoleCode: string }) => t.consoleCode === "PS5",
+  ).id;
   const booths = [];
   for (let i = 0; i < 2; i++)
     booths.push(
@@ -310,6 +304,7 @@ test("PostgreSQL serializes parallel last-stock and payment requests, backend en
     accounts.push(
       await create("accounts", {
         boothId,
+        tariffId,
         customerName: "",
         customerPhone: "",
       }),
@@ -326,12 +321,15 @@ test("PostgreSQL serializes parallel last-stock and payment requests, backend en
   expect(stocks.map((r) => r.status()).sort()).toEqual([200, 409]);
   const winner = accounts[stocks.findIndex((r) => r.status() === 200)];
   await create(`accounts/${winner}/precheck`, { expectedVersion: 2 });
+  const due = (
+    await (await page.request.get(`/api/v1/accounts/${winner}`)).json()
+  ).due;
   const payments = await Promise.all(
     [1, 2].map(() =>
       cmd(`accounts/${winner}/payments`, {
         expectedVersion: 3,
         methodId,
-        amount: 10000,
+        amount: due,
         transferId: "",
         confirmedByCashier: true,
       }),
@@ -353,5 +351,5 @@ test("PostgreSQL serializes parallel last-stock and payment requests, backend en
   await create(`accounts/${winner}/close`, { expectedVersion: 4 });
   const w = await (await page.request.get("/api/v1/workspace")).json();
   const shift = w.shifts.find((s: { closedAt: string }) => !s.closedAt);
-  await create(`shifts/${shift.id}/close`, { actualCash: 10000, reason: "" });
+  await create(`shifts/${shift.id}/close`, { actualCash: due, reason: "" });
 });

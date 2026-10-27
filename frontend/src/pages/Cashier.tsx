@@ -88,8 +88,7 @@ export function Cashier() {
                 (filter === "busy") === active.some((a) => a.boothId === b.id),
             )
             .map((b) => {
-              const account = active.find((a) => a.boothId === b.id),
-                tariff = w.tariffs.find((t) => t.id === b.tariffId)!;
+              const account = active.find((a) => a.boothId === b.id);
               return (
                 <button
                   className={
@@ -113,7 +112,9 @@ export function Cashier() {
                   </div>
                   <h2>{b.name}</h2>
                   <p>
-                    {b.console} <span>·</span> {money(tariff.hourlyRate)}/час
+                    {account
+                      ? `${account.console} · ${money(account.hourlyRate)}/час`
+                      : "Выберите приставку при открытии"}
                   </p>
                   <div className="booth-bottom">
                     {account ? (
@@ -154,10 +155,25 @@ export function Cashier() {
               <h2>Новый счёт</h2>
               <p>
                 {w.booths.find((b) => b.id === creating)?.name} · таймер
-                запустится отдельной кнопкой
+                запустится сразу
               </p>
               <Form
                 fields={[
+                  {
+                    name: "tariffId",
+                    label: "Приставка и стоимость часа",
+                    options: [
+                      { value: "", label: "Выберите приставку" },
+                      ...w.tariffs
+                        .filter((t) =>
+                          ["PS3", "PS4", "PS5"].includes(t.consoleCode ?? ""),
+                        )
+                        .map((t) => ({
+                          value: t.id,
+                          label: `${t.consoleCode} · ${money(t.hourlyRate)}/час`,
+                        })),
+                    ],
+                  },
                   {
                     name: "customerName",
                     label: "Имя гостя · необязательно",
@@ -170,10 +186,11 @@ export function Cashier() {
                     required: false,
                   },
                 ]}
-                label="Создать счёт"
+                label="Открыть счёт и запустить таймер"
                 submit={async (d) => {
                   const ok = await run("CreateAccount", {
                     boothId: creating,
+                    tariffId: d.tariffId,
                     customerName: d.customerName,
                     customerPhone: d.customerPhone,
                   });

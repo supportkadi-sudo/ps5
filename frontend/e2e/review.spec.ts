@@ -131,7 +131,12 @@ test("report renders server product sales when workspace accounts and products a
     w = await api.execute({
       name: "CreateAccount",
       key: crypto.randomUUID(),
-      data: { boothId: "b1", customerName: "", customerPhone: "" },
+      data: {
+        boothId: "b1",
+        tariffId: "ps5",
+        customerName: "",
+        customerPhone: "",
+      },
     });
     const id = w.accounts[0].id;
     await api.execute({

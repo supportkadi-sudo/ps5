@@ -63,7 +63,7 @@ class ConcurrencyTests(CashierCase):
 
     def test_concurrent_booth_creation_cannot_double_book(self):
         self.shift()
-        data = {"boothId": str(self.booth.pk), "customerName": "", "customerPhone": ""}
+        data = {"boothId": str(self.booth.pk), "tariffId": str(self.tariff.pk), "customerName": "", "customerPhone": ""}
         results = self.race(
             [
                 (str(uuid4()), "CreateAccount", "", data),
