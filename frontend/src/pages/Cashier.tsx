@@ -14,11 +14,23 @@ function initialColumns(): number {
   }
 }
 
-export function Cashier() {
+export function Cashier({
+  selected,
+  creating,
+  onSelect,
+  onCreate,
+  onBack,
+  onCreated,
+}: {
+  selected: string;
+  creating: string;
+  onSelect: (id: string) => void;
+  onCreate: (id: string) => void;
+  onBack: () => void;
+  onCreated: () => void;
+}) {
   const { w, run, user, busy, online } = useClub();
-  const [selected, setSelected] = useState(""),
-    [creating, setCreating] = useState(""),
-    [filter, setFilter] = useState("all"),
+  const [filter, setFilter] = useState("all"),
     [columns, setColumns] = useState(initialColumns);
   const changeColumns = (value: number) => {
     setColumns(value);
@@ -144,7 +156,7 @@ export function Cashier() {
                   key={b.id}
                   disabled={busy || !online}
                   onClick={() =>
-                    account ? setSelected(account.id) : setCreating(b.id)
+                    account ? onSelect(account.id) : onCreate(b.id)
                   }
                 >
                   <div className="booth-top">
@@ -190,11 +202,7 @@ export function Cashier() {
               aria-label="Новый счёт"
               className="modal"
             >
-              <button
-                className="close"
-                onClick={() => setCreating("")}
-                aria-label="Закрыть"
-              >
+              <button className="close" onClick={onBack} aria-label="Закрыть">
                 ×
               </button>
               <h2>Новый счёт</h2>
@@ -239,7 +247,7 @@ export function Cashier() {
                     customerName: d.customerName,
                     customerPhone: d.customerPhone,
                   });
-                  if (ok) setCreating("");
+                  if (ok) onCreated();
                   return ok;
                 }}
               />
@@ -259,7 +267,7 @@ export function Cashier() {
                 <button
                   className="account-row"
                   key={a.id}
-                  onClick={() => setSelected(a.id)}
+                  onClick={() => onSelect(a.id)}
                 >
                   <span>
                     <b>{w.booths.find((b) => b.id === a.boothId)?.name}</b>
@@ -279,11 +287,7 @@ export function Cashier() {
       </section>
       {a && (
         <section className="selected-account">
-          <AccountDetail
-            key={a.id}
-            account={a}
-            onBack={() => setSelected("")}
-          />
+          <AccountDetail key={a.id} account={a} onBack={onBack} />
         </section>
       )}
     </div>
