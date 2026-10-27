@@ -305,7 +305,7 @@ class BankFlowTests(CashierCase):
                     dict(
                         expectedVersion=5,
                         methodId=str(self.cash.pk),
-                        amount=5000,
+                        amount=5500,
                         transferId="",
                         confirmedByCashier=True,
                     ),
@@ -323,7 +323,7 @@ class BankFlowTests(CashierCase):
                 )
                 shift = Account.objects.get(pk=a).shift
                 self.command(
-                    "CloseShift", dict(actualCash=105000, reason=""), str(shift.pk)
+                    "CloseShift", dict(actualCash=105500, reason=""), str(shift.pk)
                 )
 
     def test_ambiguous_mismatched_card_time_amount_and_fraction_require_review(self):

@@ -4,6 +4,8 @@ from apps.core.models import Entity, MAX_MONEY
 
 class Account(Entity):
     booth = models.ForeignKey("club.Booth", on_delete=models.PROTECT)
+    tariff = models.ForeignKey("club.Tariff", on_delete=models.PROTECT, null=True)
+    console = models.CharField(max_length=100, blank=True)
     shift = models.ForeignKey("shifts.Shift", on_delete=models.PROTECT)
     customer_name = models.CharField(max_length=150, blank=True)
     customer_phone = models.CharField(max_length=50, blank=True)

@@ -21,13 +21,18 @@ test("cashier journey, persistence, reasoned removal, payment and closure", asyn
   await expect(page.getByText("Смена открыта", { exact: true })).toBeVisible();
   await nav("Игровой зал");
   await page.getByRole("button", { name: /Кабинка 01/ }).click();
-  await page.getByRole("button", { name: "Создать счёт", exact: true }).click();
+  await page.locator("[name=tariffId]").selectOption("ps5");
   await page
     .getByRole("button", {
-      name: /^Не запущен Кабинка 01/,
+      name: "Открыть счёт и запустить таймер",
+      exact: true,
     })
     .click();
-  await page.getByRole("button", { name: "Запустить таймер" }).click();
+  await page
+    .getByRole("button", {
+      name: /^Идёт игра Кабинка 01/,
+    })
+    .click();
   await expect(
     page.locator(".detail").getByText("Идёт игра", { exact: true }),
   ).toBeVisible();
@@ -157,8 +162,14 @@ test("P2P requires explicit fixture match and split cash closes only on confirma
     .getByRole("button", { name: "Игровой зал" })
     .click();
   await page.getByRole("button", { name: /Свободна Кабинка 01/ }).click();
-  await page.getByRole("button", { name: "Создать счёт", exact: true }).click();
-  await page.getByRole("button", { name: /^Не запущен Кабинка 01/ }).click();
+  await page.locator("[name=tariffId]").selectOption("ps5");
+  await page
+    .getByRole("button", {
+      name: "Открыть счёт и запустить таймер",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("button", { name: /^Идёт игра Кабинка 01/ }).click();
   await page.getByRole("button", { name: /^Добавить Coca-Cola/ }).click();
   await page.getByRole("button", { name: /^Добавить Coca-Cola/ }).click();
   await page

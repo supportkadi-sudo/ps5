@@ -66,9 +66,12 @@ for (const source of ["uzcard", "humo"] as const) {
       expectedVersion: 0,
       reason: "Synthetic P2P E2E",
     });
-    const tariffId = await command("club/tariffs", {
-      tariff: { id: "", name: suffix, hourlyRate: 60000 },
-    });
+    const workspace = await (
+      await page.request.get("/api/v1/workspace")
+    ).json();
+    const tariffId = workspace.tariffs.find(
+      (t: { consoleCode: string }) => t.consoleCode === "PS5",
+    ).id;
     const boothId = await command("club/booths", {
       booth: { id: "", name: suffix, console: "PS5", tariffId, enabled: true },
     });
@@ -117,8 +120,12 @@ for (const source of ["uzcard", "humo"] as const) {
       has: page.getByRole("heading", { name: suffix, exact: true }),
     });
     await booth.click();
+    await page.locator("[name=tariffId]").selectOption(tariffId);
     await page
-      .getByRole("button", { name: "Создать счёт", exact: true })
+      .getByRole("button", {
+        name: "Открыть счёт и запустить таймер",
+        exact: true,
+      })
       .click();
     await booth.click();
     await page
@@ -219,7 +226,7 @@ for (const source of ["uzcard", "humo"] as const) {
     expect(detail.payments[0].transferId).toBe(eventId);
     expect(detail.paid).toBe(5000);
     expect(detail.status).toBe("awaiting_payment");
-    expect(detail.due).toBe(5000);
+    expect(detail.due).toBe(detail.total - 5000);
     await expect(
       page.getByRole("button", { name: /Подтверждаю полную оплату/ }),
     ).toHaveCount(0);
@@ -238,7 +245,7 @@ for (const source of ["uzcard", "humo"] as const) {
       await page.request.get(`/api/v1/accounts/${accountId}`)
     ).json();
     expect(detail.status).toBe("awaiting_payment");
-    expect(detail.paid).toBe(10000);
+    expect(detail.paid).toBe(detail.total);
     await page
       .getByRole("button", { name: /Подтверждаю полную оплату/ })
       .click();
@@ -254,7 +261,7 @@ for (const source of ["uzcard", "humo"] as const) {
       final.payments.some((p: { methodId: string }) => p.methodId === cashId),
     ).toBe(true);
     const shiftId = final.shiftId;
-    await command(`shifts/${shiftId}/close`, { actualCash: 5000, reason: "" });
+    await command(`shifts/${shiftId}/close`, { actualCash: final.total - 5000, reason: "" });
     await logout(page);
     await login(page, "e2e-owner");
     const audit = await (

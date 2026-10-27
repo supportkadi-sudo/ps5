@@ -3358,6 +3358,12 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "consoleCode": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -3741,6 +3747,12 @@
               "goodsAmount",
               "paymentMethods"
             ]
+          },
+          "tariffId": {
+            "type": "string"
+          },
+          "console": {
+            "type": "string"
           }
         },
         "required": [
@@ -3760,7 +3772,9 @@
           "gameAmount",
           "total",
           "paid",
-          "due"
+          "due",
+          "tariffId",
+          "console"
         ]
       },
       "PaymentMethod": {
@@ -4314,12 +4328,17 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "tariffId": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
           "boothId",
           "customerName",
-          "customerPhone"
+          "customerPhone",
+          "tariffId"
         ]
       },
       "StartTimer": {

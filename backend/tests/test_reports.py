@@ -23,14 +23,14 @@ class ReportTests(CashierCase):
             {
                 "expectedVersion": 3,
                 "methodId": str(self.cash.pk),
-                "amount": 10000,
+                "amount": 10500,
                 "transferId": "",
                 "confirmedByCashier": True,
             },
             a,
         )
         self.assertEqual(report()["revenue"], 0)
-        self.assertEqual(report()["paymentsByMethod"][str(self.cash.pk)], 10000)
+        self.assertEqual(report()["paymentsByMethod"][str(self.cash.pk)], 10500)
         self.command("CloseAccount", {"expectedVersion": 4}, a)
         self.command(
             "AddExpense",
@@ -47,7 +47,7 @@ class ReportTests(CashierCase):
         validate("Report", r)
         self.assertEqual(
             (r["revenue"], r["costOfGoods"], r["grossProfit"], r["netResult"]),
-            (10000, 4000, 6000, 5000),
+            (10500, 4000, 6500, 5500),
         )
         self.assertEqual(r["productSales"][0]["quantity"], 1)
         # Move sale before local midnight; refund is recognized today.
@@ -66,9 +66,9 @@ class ReportTests(CashierCase):
         today = timezone.localdate()
         r = report(today, today)
         validate("Report", r)
-        self.assertEqual(r["revenue"], -10000)
+        self.assertEqual(r["revenue"], -10500)
         self.assertEqual(r["costOfGoods"], -4000)
-        self.assertEqual(r["revenueByMethod"][str(self.cash.pk)], -10000)
+        self.assertEqual(r["revenueByMethod"][str(self.cash.pk)], -10500)
         self.assertEqual(report()["revenue"], 0)
         self.assertEqual(report()["paymentsByMethod"][str(self.cash.pk)], 0)
 

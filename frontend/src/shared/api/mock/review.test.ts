@@ -14,6 +14,7 @@ async function setup() {
   await send("OpenShift", { openingCash: 0 });
   const w = await send("CreateAccount", {
     boothId: "b1",
+    tariffId: "ps5",
     customerName: "",
     customerPhone: "",
   });
@@ -52,13 +53,12 @@ it("precheck snapshots accrued timer charges at the command timestamp", async ()
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-22T10:00:00Z"));
   const { send, id } = await setup();
-  await send("StartTimer", { expectedVersion: 1 }, id);
   vi.setSystemTime(new Date("2026-10-22T11:00:00Z"));
-  const w = await send("Precheck", { expectedVersion: 2 }, id);
+  const w = await send("Precheck", { expectedVersion: 1 }, id);
   const e = w.audit.at(-1)!;
   const before = JSON.parse(e.before).account,
     after = JSON.parse(e.after).account;
-  expect(before.gameAmount).toBe(40000);
+  expect(before.gameAmount).toBe(60000);
   expect(before.total).toBe(after.total);
   expect(before.gameAmount).toBe(after.gameAmount);
   expect(before.status).toBe("playing");

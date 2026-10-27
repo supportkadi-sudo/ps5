@@ -39,6 +39,8 @@ def account_row(a, actor, now):
         dict(
             id="id",
             boothId="booth_id",
+            tariffId="tariff_id",
+            console="console",
             shiftId="shift_id",
             customerName="customer_name",
             customerPhone="customer_phone",

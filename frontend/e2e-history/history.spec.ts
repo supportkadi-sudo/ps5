@@ -10,6 +10,8 @@ test("history cards, detail, server filters, cursor reset, empty and network err
   const a: Account = {
     id: "3180d325-example",
     boothId: "b1",
+    tariffId: "ps5",
+    console: "PS5",
     shiftId: "shift",
     customerName: "",
     customerPhone: "",

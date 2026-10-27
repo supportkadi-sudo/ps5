@@ -40,6 +40,7 @@ describe("audit regressions", () => {
     await send("OpenShift", { openingCash: 0 });
     let w = await send("CreateAccount", {
       boothId: "b1",
+      tariffId: "ps5",
       customerName: "",
       customerPhone: "",
     });
@@ -83,7 +84,7 @@ describe("audit regressions", () => {
     });
     await api.login("owner", "demo");
     await sender(api)("OpenShift", { openingCash: 0 });
-    expect((await api.load()).tariffs[0].hourlyRate).toBe(40000);
+    expect((await api.load()).tariffs[0].hourlyRate).toBe(60000);
   });
 });
 
@@ -101,6 +102,7 @@ it("keeps cash exact when valid credits and debits cancel near the integer limit
   });
   let w = await send("CreateAccount", {
     boothId: "b1",
+    tariffId: "ps5",
     customerName: "",
     customerPhone: "",
   });

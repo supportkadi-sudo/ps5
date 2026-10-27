@@ -19,7 +19,7 @@ class CashierCase(TransactionTestCase):
         self.manager = User.objects.create_user(
             username="manager-test", password="test-only-long-password", role="manager"
         )
-        self.tariff = Tariff.objects.create(name="PS5", hourly_rate=40000)
+        self.tariff = Tariff.objects.create(name="PS5", hourly_rate=40000, console_code="PS5")
         self.booth = Booth.objects.create(name="01", console="PS5", tariff=self.tariff)
         self.product = Product.objects.create(
             name="Cola", category="Bar", sale_price=10000, default_cost=4000
@@ -41,7 +41,7 @@ class CashierCase(TransactionTestCase):
     def account(self):
         return self.command(
             "CreateAccount",
-            {"boothId": str(self.booth.pk), "customerName": "", "customerPhone": ""},
+            {"boothId": str(self.booth.pk), "tariffId": str(self.tariff.pk), "customerName": "", "customerPhone": ""},
         )["entityId"]
 
     def receive(self, quantity=2, cost=4000):

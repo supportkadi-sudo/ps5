@@ -19,19 +19,23 @@ export function accountCommand(
       )
     )
       throw Error("Кабинка уже занята");
-    const t = w.tariffs.find((t) => t.id === b.tariffId)!;
+    const t = w.tariffs.find((t) => t.id === c.data.tariffId);
+    if (!t || !["PS3", "PS4", "PS5"].includes(t.consoleCode ?? ""))
+      throw Error("Выберите тариф");
     const a: Account = {
       id: crypto.randomUUID(),
       boothId: b.id,
+      tariffId: t.id,
+      console: t.consoleCode!,
       shiftId: shift.id,
       customerName: c.data.customerName,
       customerPhone: c.data.customerPhone,
-      status: "draft",
+      status: "playing",
       version: 1,
       hourlyRate: t.hourlyRate,
       createdAt: now,
       closedAt: "",
-      segments: [],
+      segments: [{ startedAt: now, stoppedAt: "" }],
       lines: [],
       payments: [],
       gameAmount: 0,

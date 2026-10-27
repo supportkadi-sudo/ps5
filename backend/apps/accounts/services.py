@@ -1,6 +1,6 @@
 from django.utils import timezone
 from apps.accounts.models import Account, Segment
-from apps.club.models import Booth
+from apps.club.models import Booth, Tariff
 from apps.shifts.services import current
 from apps.inventory.services import add_line, remove_line
 from apps.core.rules import require, audit, snapshot
@@ -21,14 +21,21 @@ def create(actor, data):
         ).exists(),
         "Booth occupied",
     )
+    tariff = Tariff.objects.select_for_update().get(pk=data["tariffId"])
+    require(tariff.console_code in ("PS3", "PS4", "PS5"), "Select a PlayStation tariff")
+    now = timezone.now()
     account = Account.objects.create(
         booth=booth,
         shift=shift,
-        hourly_rate=booth.tariff.hourly_rate,
+        tariff=tariff,
+        console=tariff.console_code,
+        hourly_rate=tariff.hourly_rate,
+        status="playing",
         customer_name=data["customerName"],
         customer_phone=data["customerPhone"],
-        created_at=timezone.now(),
+        created_at=now,
     )
+    Segment.objects.create(account=account, started_at=now)
     audit(actor, account, "CreateAccount", {})
     return account
 

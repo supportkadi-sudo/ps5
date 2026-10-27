@@ -111,12 +111,15 @@ test("complete screen catalog", async ({ page, isMobile, context }) => {
   await page.locator(".booth").first().click();
   await shot("Создание счёта · диалог");
   await page.getByLabel("Имя гостя · необязательно").fill("Гость 1");
-  await page.getByRole("button", { name: "Создать счёт", exact: true }).click();
-  await page.locator(".booth").first().click();
-  await shot("Новый счёт · таймер не запущен");
+  await page.locator("[name=tariffId]").selectOption("ps5");
   await page
-    .getByRole("button", { name: "▶ Запустить таймер", exact: true })
+    .getByRole("button", {
+      name: "Открыть счёт и запустить таймер",
+      exact: true,
+    })
     .click();
+  await page.locator(".booth").first().click();
+  await shot("Новый счёт · таймер запущен");
   await page.clock.setSystemTime(new Date(Date.now() + 43 * 60000));
   await page.waitForTimeout(1200);
   await page.getByRole("button", { name: /^Добавить Coca-Cola/ }).click();
@@ -193,11 +196,14 @@ test("complete screen catalog", async ({ page, isMobile, context }) => {
     .click();
   await shot("Зал · завершённый счёт");
   await page.locator(".booth").nth(1).click();
-  await page.getByRole("button", { name: "Создать счёт", exact: true }).click();
-  await page.locator(".booth").nth(1).click();
+  await page.locator("[name=tariffId]").selectOption("ps5");
   await page
-    .getByRole("button", { name: "▶ Запустить таймер", exact: true })
+    .getByRole("button", {
+      name: "Открыть счёт и запустить таймер",
+      exact: true,
+    })
     .click();
+  await page.locator(".booth").nth(1).click();
   await page
     .getByRole("button", { name: "← Все кабинки", exact: true })
     .click();

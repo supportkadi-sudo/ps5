@@ -26,7 +26,7 @@ class ReviewRegressions(CashierCase):
             {
                 "expectedVersion": 3,
                 "methodId": str(self.cash.pk),
-                "amount": 10000,
+                "amount": 10500,
                 "transferId": "",
                 "confirmedByCashier": True,
             },

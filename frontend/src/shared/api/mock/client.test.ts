@@ -15,6 +15,7 @@ async function setup(role = "owner") {
   await send("OpenShift", { openingCash: 100000 });
   const w = await send("CreateAccount", {
     boothId: "b1",
+    tariffId: "ps5",
     customerName: "",
     customerPhone: "",
   });
@@ -26,18 +27,16 @@ describe("Mock API contract and money flows", () => {
     await expect(api.load()).rejects.toThrow("Войдите");
     await expect(api.login("owner", "wrong")).rejects.toThrow("пароль");
   });
-  it("keeps draft timer stopped; uses precheck, split methods, explicit final close", async () => {
+  it("starts timer on opening; uses precheck, split methods, explicit final close", async () => {
     const { api, send, id } = await setup();
     let a = (await api.load()).accounts[0];
-    expect(a.status).toBe("draft");
-    expect(a.segments).toHaveLength(0);
+    expect(a.status).toBe("playing");
+    expect(a.segments).toHaveLength(1);
     let w = await send(
       "AddLine",
       { productId: "cola", quantity: 2, expectedVersion: a.version },
       id,
     );
-    a = w.accounts[0];
-    w = await send("StartTimer", { expectedVersion: a.version }, id);
     a = w.accounts[0];
     expect(a.status).toBe("playing");
     await expect(
@@ -89,7 +88,7 @@ describe("Mock API contract and money flows", () => {
     expect(w.accounts[0].status).toBe("closed");
     expect(w.report.revenue).toBe(w.accounts[0].total);
     expect(w.report.costOfGoods).toBe(20000);
-    expect(w.shifts[0].expectedCash).toBe(116000);
+    expect(w.shifts[0].expectedCash).toBe(100000 + w.accounts[0].total - 20000);
   });
   it("allocates oldest lots and restores exact allocations, retaining reason/history", async () => {
     const { send, id, api } = await setup();
@@ -152,6 +151,7 @@ describe("Mock API contract and money flows", () => {
     await expect(
       send("CreateAccount", {
         boothId: "b1",
+        tariffId: "ps5",
         customerName: "",
         customerPhone: "",
       }),
@@ -211,11 +211,6 @@ describe("Mock API contract and money flows", () => {
   it("cash expense, reasoned shift discrepancy and handover preserve active timer", async () => {
     const { send, id, api } = await setup();
     let w = await api.load();
-    w = await send(
-      "StartTimer",
-      { expectedVersion: w.accounts[0].version },
-      id,
-    );
     w = await send("AddExpense", {
       scope: "shift",
       amount: 10000,
@@ -244,17 +239,12 @@ describe("Mock API contract and money flows", () => {
   it("rounds total once, midpoint up, using actual timer segments and tariff snapshot", async () => {
     const { api, send, id } = await setup();
     let w = await api.load();
-    w = await send(
-      "StartTimer",
-      { expectedVersion: w.accounts[0].version },
-      id,
-    );
     const a = w.accounts[0];
     a.segments = [
       { startedAt: "2026-10-22T10:00:00Z", stoppedAt: "2026-10-22T11:20:00Z" },
     ];
     recalculate(w);
-    expect(a.total).toBe(53500);
+    expect(a.total).toBe(80000);
     a.segments = [];
     a.lines = [
       {
@@ -274,7 +264,7 @@ describe("Mock API contract and money flows", () => {
     const updated = await send("SaveTariff", {
       tariff: { id: "ps5", name: "New", hourlyRate: 90000 },
     });
-    expect(updated.accounts[0].hourlyRate).toBe(40000);
+    expect(updated.accounts[0].hourlyRate).toBe(60000);
   });
   it("does not recursively embed audit history inside snapshots", async () => {
     const { send, id, api } = await setup();
@@ -364,6 +354,7 @@ describe("payment retries", () => {
     expect((await api.load()).accounts[0].payments).toHaveLength(1);
     w = await send("CreateAccount", {
       boothId: "b2",
+      tariffId: "ps5",
       customerName: "",
       customerPhone: "",
     });

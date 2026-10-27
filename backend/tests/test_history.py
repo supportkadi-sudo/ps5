@@ -239,7 +239,7 @@ class HistoryTests(CashierCase):
             {
                 "expectedVersion": 3,
                 "methodId": str(self.cash.pk),
-                "amount": 10000,
+                "amount": 10500,
                 "transferId": "",
                 "confirmedByCashier": True,
             },
@@ -259,7 +259,7 @@ class HistoryTests(CashierCase):
         response = self.client.get("/api/v1/accounts/" + a)
         validate("Account", response.json())
         self.assertEqual(len(response.json()["payments"]), 1)
-        self.assertEqual(response.json()["refund"]["amount"], 10000)
+        self.assertEqual(response.json()["refund"]["amount"], 10500)
         self.assertFalse(response.json()["refund"]["restockGoods"])
         from apps.inventory.models import Batch
         from apps.reports.services import report
@@ -269,7 +269,7 @@ class HistoryTests(CashierCase):
         shift_page = self.client.get("/api/v1/shifts").json()
         validate("ShiftPage", shift_page)
         self.assertEqual(
-            shift_page["items"][0]["refundsByMethod"][str(self.cash.pk)], 10000
+            shift_page["items"][0]["refundsByMethod"][str(self.cash.pk)], 10500
         )
         page = self.client.get("/api/v1/refunds", {"accountId": a}).json()
         validate("RefundPage", page)
@@ -281,7 +281,7 @@ class HistoryTests(CashierCase):
             self.client.get("/api/v1/workspace").json()["shifts"][0]["refundsByMethod"][
                 str(self.cash.pk)
             ],
-            10000,
+            10500,
         )
 
     def test_source_event_duplicates_concurrency_and_conflicting_payload(self):

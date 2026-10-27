@@ -90,7 +90,7 @@ def workspace(actor):
         ),
         tariffs=rows(
             Tariff.objects.all().order_by("id"),
-            dict(id="id", name="name", hourlyRate="hourly_rate"),
+            dict(id="id", name="name", hourlyRate="hourly_rate", consoleCode="console_code"),
         ),
         products=products,
         batches=rows(
