@@ -255,25 +255,27 @@ function Shell() {
           </section>
         )}
         <main className="content">
-          {page === "cashier" ? (
-            <Cashier />
-          ) : page === "shifts" ? (
-            <ShiftPage />
-          ) : manager && page === "catalog" ? (
-            <CatalogPage />
-          ) : manager && page === "reports" ? (
-            <ReportsPage />
-          ) : manager && page === "history" && !isDemo ? (
-            <ServerAccounts />
-          ) : manager && page === "audit" ? (
-            isDemo ? (
-              <AuditPage />
-            ) : (
-              <ServerAudit />
-            )
-          ) : manager && page === "settings" ? (
-            <SettingsPage />
-          ) : null}
+          <div key={page} className="page-content">
+            {page === "cashier" ? (
+              <Cashier />
+            ) : page === "shifts" ? (
+              <ShiftPage />
+            ) : manager && page === "catalog" ? (
+              <CatalogPage />
+            ) : manager && page === "reports" ? (
+              <ReportsPage />
+            ) : manager && page === "history" && !isDemo ? (
+              <ServerAccounts />
+            ) : manager && page === "audit" ? (
+              isDemo ? (
+                <AuditPage />
+              ) : (
+                <ServerAudit />
+              )
+            ) : manager && page === "settings" ? (
+              <SettingsPage />
+            ) : null}
+          </div>
         </main>
         <footer>PLAYROOM · Все суммы в UZS</footer>
         <div className="bottom-nav" role="group" aria-label="Быстрая навигация">
