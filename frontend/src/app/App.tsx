@@ -70,7 +70,17 @@ export function App() {
         <button onClick={() => setAttempt((n) => n + 1)}>Повторить</button>
       </div>
     );
-  if (!user) return <Login onLogin={setUser} />;
+  if (!user)
+    return (
+      <Login
+        onLogin={(next) => {
+          const state = { ...window.history.state };
+          delete state.clubLocation;
+          window.history.replaceState(state, "");
+          setUser(next);
+        }}
+      />
+    );
   return (
     <ClubProvider
       user={user}
