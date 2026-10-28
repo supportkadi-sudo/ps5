@@ -42,15 +42,27 @@ test("history cards, detail, server filters, cursor reset, empty and network err
   w.accounts = [{ ...a, total: 1000, paid: 1000 }];
   const requests: URL[] = [];
   let fail = false;
+  let loggedIn = false;
   await page.route("**/api/v1/**", async (route) => {
     const u = new URL(route.request().url());
     const p = u.pathname;
     let json: unknown;
     if (p === "/api/v1/auth/csrf") json = { csrfToken: "test" };
-    else if (p === "/api/v1/auth/login")
+    else if (p === "/api/v1/auth/login") {
+      loggedIn = true;
       json = { user: w.users[0], csrfToken: "test" };
-    else if (p === "/api/v1/workspace") json = w;
-    else if (p === "/api/v1/access/users") json = { items: w.users };
+    } else if (p === "/api/v1/workspace") {
+      if (!loggedIn)
+        return route.fulfill({
+          status: 403,
+          json: {
+            code: "not_authenticated",
+            message: "Authentication required",
+            fieldErrors: {},
+          },
+        });
+      json = w;
+    } else if (p === "/api/v1/access/users") json = { items: w.users };
     else if (p === "/api/v1/settings/review-links") json = { items: [] };
     else if (p === "/api/v1/commands/pending") json = { pending: null };
     else if (p === "/api/v1/accounts/" + a.id) json = a;
@@ -73,6 +85,10 @@ test("history cards, detail, server filters, cursor reset, empty and network err
   await page.locator("[name=username]").fill("owner");
   await page.locator("[name=password]").fill("test");
   await page.getByRole("button", { name: "Войти в клуб" }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Войти в клуб" })).toHaveCount(
+    0,
+  );
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "Меню", exact: true }).click();
   await page
@@ -110,7 +126,8 @@ test("history cards, detail, server filters, cursor reset, empty and network err
     page.getByRole("button", { name: "← История счетов" }),
   ).toBeVisible();
   await expect(page.locator(".detail .total")).toHaveText(/165\s*000 сум/);
-  await page.getByRole("button", { name: "← История счетов" }).click();
+  await page.evaluate(() => history.back());
+  await expect(card.getByRole("heading", { name: "Кабинка №3" })).toBeVisible();
   const payload = '<img src=x onerror="window.historyXss=1">';
   a.history!.cashierName = payload;
   a.history!.paymentMethods = [payload];
@@ -154,6 +171,19 @@ test("history cards, detail, server filters, cursor reset, empty and network err
 test("theme uses system preference, persists selection and works without storage", async ({
   page,
 }) => {
+  await page.route("**/api/v1/auth/csrf", (route) =>
+    route.fulfill({ json: { csrfToken: "test" } }),
+  );
+  await page.route("**/api/v1/workspace", (route) =>
+    route.fulfill({
+      status: 403,
+      json: {
+        code: "not_authenticated",
+        message: "Authentication required",
+        fieldErrors: {},
+      },
+    }),
+  );
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

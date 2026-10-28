@@ -54,6 +54,7 @@ export class HttpApi implements ClubApi {
           ([401, 403].includes(response.status)
             ? "Нет доступа: проверьте вход и права сотрудника. "
             : "Запрос отклонён: ") + message,
+          response.status,
         );
       }
       const prefix =
@@ -83,6 +84,17 @@ export class HttpApi implements ClubApi {
     );
     this.csrf = s.csrfToken;
     return s.user;
+  }
+  async restoreSession(): Promise<User | null> {
+    this.csrf = (
+      await this.request<Schema["Csrf"]>("/api/v1/auth/csrf", {}, "Csrf")
+    ).csrfToken;
+    const w = await this.request<Workspace>(
+      "/api/v1/workspace",
+      {},
+      "Workspace",
+    );
+    return w.users[0] ?? null;
   }
   async logout() {
     await this.request<void>("/api/v1/auth/logout", { method: "POST" });

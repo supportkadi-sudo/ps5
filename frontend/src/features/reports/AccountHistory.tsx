@@ -1,5 +1,5 @@
 import { HistoryCard } from "./HistoryCard";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ReceiptText } from "lucide-react";
 import { useClub } from "../../app/context";
 import { api } from "../../shared/api/client";
@@ -12,7 +12,15 @@ import { useServerPage } from "./ServerHistory";
 import { dayKey, dayLabel, periodDates } from "./history-format";
 import "./account-history.css";
 
-export function ServerAccounts() {
+export function ServerAccounts({
+  selected,
+  onSelect,
+  onBack,
+}: {
+  selected: string;
+  onSelect: (id: string) => void;
+  onBack: () => void;
+}) {
   const { w } = useClub();
   const [period, setPeriod] = useState("all");
   const [from, setFrom] = useState("");
@@ -33,28 +41,37 @@ export function ServerAccounts() {
   const [account, setAccount] = useState<Account | null>(null);
   const [detailError, setDetailError] = useState("");
   const [opening, setOpening] = useState("");
-  const openingLock = useRef(false);
-  async function open(id: string) {
-    if (openingLock.current) return;
-    openingLock.current = true;
-    setOpening(id);
-    setDetailError("");
-    try {
-      setAccount(
-        await (api as HttpApi).request<Account>(
-          "/api/v1/accounts/" + encodeURIComponent(id),
-          {},
-          "Account",
-        ),
-      );
-    } catch (e) {
-      setDetailError(e instanceof Error ? e.message : "Не удалось открыть чек");
-    } finally {
-      openingLock.current = false;
+  useEffect(() => {
+    if (!selected) {
       setOpening("");
+      return;
     }
-  }
-  if (account)
+    let active = true;
+    setOpening(selected);
+    setDetailError("");
+    (api as HttpApi)
+      .request<Account>(
+        "/api/v1/accounts/" + encodeURIComponent(selected),
+        {},
+        "Account",
+      )
+      .then((found) => {
+        if (active) setAccount(found);
+      })
+      .catch((error) => {
+        if (active)
+          setDetailError(
+            error instanceof Error ? error.message : "Не удалось открыть чек",
+          );
+      })
+      .finally(() => {
+        if (active) setOpening("");
+      });
+    return () => {
+      active = false;
+    };
+  }, [selected]);
+  if (account && account.id === selected)
     return (
       <AccountDetail
         key={account.id}
@@ -64,7 +81,7 @@ export function ServerAccounts() {
           ) ?? account
         }
         onBack={() => {
-          setAccount(null);
+          onBack();
           first();
         }}
         backLabel="← История счетов"
@@ -217,7 +234,7 @@ export function ServerAccounts() {
                   account={a}
                   disabled={!!opening}
                   opening={opening === a.id}
-                  onOpen={() => void open(a.id)}
+                  onOpen={() => onSelect(a.id)}
                 />
               ))}
             </div>

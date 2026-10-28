@@ -203,7 +203,7 @@ test("real session owner setup → cashier FIFO, timer, split payments, lost ack
     page.getByRole("button", { name: "Повторить исходную команду" }),
   ).toBeVisible();
   await page.reload();
-  await login(page, cashier);
+  await expect(page.locator("[name=username]")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Повторить исходную команду" })
     .click();

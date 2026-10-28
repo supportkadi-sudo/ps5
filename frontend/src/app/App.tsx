@@ -1,7 +1,10 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { ServerAccounts } from "../features/reports/AccountHistory";
 import { ServerAudit } from "../features/reports/ServerHistory";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { HttpApi } from "../shared/api/http";
+import { CommandRejected } from "../shared/api/errors";
+import { useClubNavigation } from "./navigation";
 import {
   Gamepad2,
   LayoutDashboard,
@@ -26,7 +29,58 @@ import { SettingsPage } from "../features/admin/SettingsPage";
 import { ReportsPage, AuditPage } from "../features/reports/ReportsPage";
 export function App() {
   const [user, setUser] = useState<User | null>(null);
-  if (!user) return <Login onLogin={setUser} />;
+  const [checking, setChecking] = useState(!isDemo);
+  const [restoreError, setRestoreError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (isDemo) return;
+    let active = true;
+    setChecking(true);
+    setRestoreError("");
+    (api as HttpApi)
+      .restoreSession()
+      .then((restored) => {
+        if (active) setUser(restored);
+      })
+      .catch((error) => {
+        if (
+          active &&
+          !(
+            error instanceof CommandRejected &&
+            (error.status === 401 || error.status === 403)
+          )
+        )
+          setRestoreError(
+            error instanceof Error ? error.message : "Ошибка соединения",
+          );
+      })
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [attempt]);
+  if (checking) return <div className="loading">Проверяем вход…</div>;
+  if (restoreError)
+    return (
+      <div className="loading" role="alert">
+        {restoreError}
+        <br />
+        <button onClick={() => setAttempt((n) => n + 1)}>Повторить</button>
+      </div>
+    );
+  if (!user)
+    return (
+      <Login
+        onLogin={(next) => {
+          const state = { ...window.history.state };
+          delete state.clubLocation;
+          window.history.replaceState(state, "");
+          setUser(next);
+        }}
+      />
+    );
   return (
     <ClubProvider
       user={user}
@@ -135,21 +189,40 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
 }
 function Shell() {
   const { user, online, logout, pending, retry, busy } = useClub();
-  const [page, setPage] = useState("cashier"),
-    [menu, setMenu] = useState(false);
+  const { location, navigate, back } = useClubNavigation();
+  const { page, menu } = location;
+  const setPage = (next: typeof page) => {
+    if (next === page && !location.account && !location.creating) {
+      if (menu) back();
+      return;
+    }
+    navigate({ page: next, menu: false, account: "", creating: "" }, menu);
+  };
+  const setMenu = (open: boolean) =>
+    open ? navigate({ menu: true }) : menu ? back() : undefined;
   const manager = user.role !== "cashier";
   const nav = [
-    { id: "cashier", label: "Игровой зал", icon: LayoutDashboard },
-    { id: "shifts", label: "Смена и касса", icon: Wallet },
+    { id: "cashier" as const, label: "Игровой зал", icon: LayoutDashboard },
+    { id: "shifts" as const, label: "Смена и касса", icon: Wallet },
     ...(manager
       ? [
-          { id: "catalog", label: "Каталог и склад", icon: Package },
-          { id: "reports", label: "Отчёты", icon: ChartNoAxesCombined },
+          { id: "catalog" as const, label: "Каталог и склад", icon: Package },
+          {
+            id: "reports" as const,
+            label: "Отчёты",
+            icon: ChartNoAxesCombined,
+          },
           ...(!isDemo
-            ? [{ id: "history", label: "История счетов", icon: ScrollText }]
+            ? [
+                {
+                  id: "history" as const,
+                  label: "История счетов",
+                  icon: ScrollText,
+                },
+              ]
             : []),
-          { id: "audit", label: "Журнал аудита", icon: ScrollText },
-          { id: "settings", label: "Настройки", icon: Settings },
+          { id: "audit" as const, label: "Журнал аудита", icon: ScrollText },
+          { id: "settings" as const, label: "Настройки", icon: Settings },
         ]
       : []),
   ];
@@ -172,7 +245,6 @@ function Shell() {
               className={page === n.id ? "active" : ""}
               onClick={() => {
                 setPage(n.id);
-                setMenu(false);
               }}
             >
               <n.icon size={20} />
@@ -257,7 +329,14 @@ function Shell() {
         <main className="content">
           <div key={page} className="page-content">
             {page === "cashier" ? (
-              <Cashier />
+              <Cashier
+                selected={location.account}
+                creating={location.creating}
+                onSelect={(id) => navigate({ account: id, creating: "" })}
+                onCreate={(id) => navigate({ creating: id })}
+                onBack={back}
+                onCreated={() => navigate({ creating: "" }, true)}
+              />
             ) : page === "shifts" ? (
               <ShiftPage />
             ) : manager && page === "catalog" ? (
@@ -265,7 +344,11 @@ function Shell() {
             ) : manager && page === "reports" ? (
               <ReportsPage />
             ) : manager && page === "history" && !isDemo ? (
-              <ServerAccounts />
+              <ServerAccounts
+                selected={location.account}
+                onSelect={(id) => navigate({ account: id })}
+                onBack={back}
+              />
             ) : manager && page === "audit" ? (
               isDemo ? (
                 <AuditPage />
@@ -285,7 +368,6 @@ function Shell() {
               className={page === n.id ? "active" : ""}
               onClick={() => {
                 setPage(n.id);
-                setMenu(false);
               }}
             >
               <n.icon size={21} />
@@ -297,7 +379,6 @@ function Shell() {
               className={page === "catalog" ? "active" : ""}
               onClick={() => {
                 setPage("catalog");
-                setMenu(false);
               }}
             >
               <Package size={21} />
